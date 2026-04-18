@@ -40,11 +40,12 @@ function renderCasaLines(day) {
   return lines.join("");
 }
 
-function renderHomeCard(dateIso, weekData, shiftSettings) {
+function renderHomeCard(dateIso, weekData, shiftSettings, todayIso) {
   const stored = weekData.days[dateIso] ? normalizeStoredDay(weekData.days[dateIso]) : createEmptyStoredDay();
   const roberto = getRobertoVisibility(stored);
   const shift = resolveShift(stored, dateIso, shiftSettings);
   const canShowRoberto = shift === "Tarde" && roberto.show;
+  const isToday = dateIso === todayIso;
   const robertoBlock = canShowRoberto
     ? `
       <section class="card-block">
@@ -60,7 +61,7 @@ function renderHomeCard(dateIso, weekData, shiftSettings) {
   const dateObj = fromISODate(dateIso);
 
   return `
-    <article class="day-card ${shiftClass(shift)}" data-day-card="${escapeHtml(dateIso)}">
+    <article class="day-card ${shiftClass(shift)} ${isToday ? "is-today" : ""}" data-day-card="${escapeHtml(dateIso)}">
       <header class="card-head">
         <div>
           <p class="card-day">${escapeHtml(formatDayLabel(dateObj))}</p>
@@ -127,6 +128,7 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
   const dateObj = fromISODate(selectedDateIso);
   const draft = getDayDraft(weekData, selectedDateIso, shiftSettings);
   const autoShift = calculateAutoShift(selectedDateIso, shiftSettings);
+  const showRobertoEditor = draft.shift === "Tarde";
 
   return `
     <section class="editor-panel">
@@ -141,18 +143,24 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
           <input type="hidden" name="shift" value="${escapeHtml(draft.shift)}" />
         </div>
 
-        <fieldset class="group">
-          <legend>Roberto (trabajo)</legend>
-          <p class="hint">En turno de tarde suele ser donde mas se usa Roberto.</p>
-          <div class="field">
-            <label for="roberto_comida">Comida</label>
-            <input id="roberto_comida" name="roberto_comida" type="text" value="${escapeHtml(draft.roberto.comida)}" />
-          </div>
-          <div class="field">
-            <label for="roberto_cena">Cena</label>
-            <input id="roberto_cena" name="roberto_cena" type="text" value="${escapeHtml(draft.roberto.cena)}" />
-          </div>
-        </fieldset>
+        ${
+          showRobertoEditor
+            ? `
+              <fieldset class="group">
+                <legend>Roberto (trabajo)</legend>
+                <p class="hint">En turno de tarde suele ser donde mas se usa Roberto.</p>
+                <div class="field">
+                  <label for="roberto_comida">Comida</label>
+                  <input id="roberto_comida" name="roberto_comida" type="text" value="${escapeHtml(draft.roberto.comida)}" />
+                </div>
+                <div class="field">
+                  <label for="roberto_cena">Cena</label>
+                  <input id="roberto_cena" name="roberto_cena" type="text" value="${escapeHtml(draft.roberto.cena)}" />
+                </div>
+              </fieldset>
+            `
+            : ""
+        }
 
         <fieldset class="group">
           <legend>Casa</legend>
@@ -217,10 +225,10 @@ function renderEditorModal({ state, weekData, weekDates, shiftSettings }) {
     .join("");
 
   return `
-    <section class="editor-modal-overlay" role="dialog" aria-modal="true" aria-label="Editar semana">
+    <section class="editor-modal-overlay" role="dialog" aria-modal="true" aria-label="Editar menú semanal">
       <div class="editor-modal-shell">
         <header class="editor-modal-header">
-          <h2>Editar semana</h2>
+          <h2>Editar menú semanal</h2>
           <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">Cerrar</button>
         </header>
         <div class="editor-modal-content">
@@ -242,7 +250,8 @@ export function renderApp({
   weekDates,
   weekRangeLabel,
   isCurrentWeek,
-  shiftSettings
+  shiftSettings,
+  todayIso
 }) {
   const header = `
     <header class="app-header">
@@ -255,7 +264,7 @@ export function renderApp({
         <button type="button" data-nav="prev">Semana anterior</button>
         <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
         <button type="button" data-nav="next">Semana siguiente</button>
-        <button type="button" class="btn-open-editor" data-open-editor>Editar semana</button>
+        <button type="button" class="btn-open-editor" data-open-editor>Editar menú semanal</button>
       </div>
 
       ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
@@ -268,7 +277,7 @@ export function renderApp({
     ? '<section class="loading">Cargando semana...</section>'
     : `
       <section class="home-grid">
-        ${weekDates.map((iso) => renderHomeCard(iso, weekData, shiftSettings)).join("")}
+        ${weekDates.map((iso) => renderHomeCard(iso, weekData, shiftSettings, todayIso)).join("")}
       </section>
     `;
 

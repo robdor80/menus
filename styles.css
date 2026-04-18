@@ -181,6 +181,12 @@ textarea {
   padding: 0.8rem;
 }
 
+.day-card.is-today {
+  border-color: #2f7b52;
+  border-width: 2px;
+  box-shadow: 0 10px 24px rgba(47, 123, 82, 0.16);
+}
+
 .day-card.livre {
   background: linear-gradient(180deg, var(--shift-libre), #ffffff);
 }

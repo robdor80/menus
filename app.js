@@ -276,7 +276,8 @@ function render() {
     weekDates,
     weekRangeLabel: weekRange,
     isCurrentWeek: state.currentWeekStartIso === todayWeekStartIso,
-    shiftSettings
+    shiftSettings,
+    todayIso
   });
 
   appRoot.innerHTML = html;
