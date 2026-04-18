@@ -23,6 +23,7 @@ const todayWeekStartIso = toISODate(startOfWeekMonday(fromISODate(todayIso)));
 
 const state = {
   view: "home",
+  editorOpen: false,
   loading: false,
   saving: false,
   infoMessage: "",
@@ -148,6 +149,7 @@ async function onSaveDay(form) {
 
     setState((prev) => ({
       saving: false,
+      editorOpen: false,
       weeksByStart: {
         ...prev.weeksByStart,
         [prev.currentWeekStartIso]: result.weekData
@@ -205,12 +207,17 @@ function bindEvents() {
     await ensureWeekLoaded();
   });
 
-  document.querySelector("[data-view='home']")?.addEventListener("click", () => {
-    setState({ view: "home" });
+  document.querySelector("[data-open-editor]")?.addEventListener("click", () => {
+    setState({ editorOpen: true, errorMessage: "" });
   });
 
-  document.querySelector("[data-view='edit']")?.addEventListener("click", () => {
-    setState({ view: "edit" });
+  document.querySelectorAll("[data-close-editor]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.saving) {
+        return;
+      }
+      setState({ editorOpen: false, errorMessage: "" });
+    });
   });
 
   document.querySelectorAll("[data-open-edit]").forEach((button) => {
@@ -221,7 +228,8 @@ function bindEvents() {
       }
       setState({
         selectedDateIso: iso,
-        view: "edit"
+        editorOpen: true,
+        errorMessage: ""
       });
     });
   });
@@ -270,6 +278,7 @@ function render() {
   });
 
   appRoot.innerHTML = html;
+  document.body.classList.toggle("modal-open", state.editorOpen);
   bindEvents();
   syncSegmentedUi();
 }
@@ -296,6 +305,12 @@ function setupGlobalErrorHandlers() {
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason instanceof Error ? event.reason.message : String(event.reason ?? "");
     setFatalError(reason || "Error inesperado en inicializacion.");
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.editorOpen && !state.saving) {
+      setState({ editorOpen: false, errorMessage: "" });
+    }
   });
 }
 

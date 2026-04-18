@@ -123,7 +123,7 @@ function renderCasaMode(name, mode) {
   `;
 }
 
-function renderEditorPanel(selectedDateIso, weekData, shiftSettings) {
+function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
   const dateObj = fromISODate(selectedDateIso);
   const draft = getDayDraft(weekData, selectedDateIso, shiftSettings);
   const autoShift = calculateAutoShift(selectedDateIso, shiftSettings);
@@ -192,9 +192,46 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings) {
         </div>
 
         <div class="actions">
-          <button class="btn-save" type="submit">Guardar dia</button>
+          <button class="btn-cancel" type="button" data-close-editor>Cancelar</button>
+          <button class="btn-save" type="submit" ${saving ? "disabled" : ""}>${saving ? "Guardando..." : "Guardar"}</button>
         </div>
       </form>
+    </section>
+  `;
+}
+
+function renderEditorModal({ state, weekData, weekDates, shiftSettings }) {
+  if (!state.editorOpen) {
+    return "";
+  }
+
+  const selectorHtml = weekDates
+    .map((iso) =>
+      renderWeekSelectorButton({
+        dateIso: iso,
+        weekData,
+        shiftSettings,
+        selected: iso === state.selectedDateIso
+      })
+    )
+    .join("");
+
+  return `
+    <section class="editor-modal-overlay" role="dialog" aria-modal="true" aria-label="Editar semana">
+      <div class="editor-modal-shell">
+        <header class="editor-modal-header">
+          <h2>Editar semana</h2>
+          <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">Cerrar</button>
+        </header>
+        <div class="editor-modal-content">
+          <section class="edit-layout">
+            <div class="week-selector">
+              ${selectorHtml}
+            </div>
+            ${renderEditorPanel(state.selectedDateIso, weekData, shiftSettings, state.saving)}
+          </section>
+        </div>
+      </div>
     </section>
   `;
 }
@@ -218,11 +255,7 @@ export function renderApp({
         <button type="button" data-nav="prev">Semana anterior</button>
         <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
         <button type="button" data-nav="next">Semana siguiente</button>
-      </div>
-
-      <div class="view-tabs">
-        <button type="button" data-view="home" class="${state.view === "home" ? "is-active" : ""}">Menu</button>
-        <button type="button" data-view="edit" class="${state.view === "edit" ? "is-active" : ""}">Editar semana</button>
+        <button type="button" class="btn-open-editor" data-open-editor>Editar semana</button>
       </div>
 
       ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
@@ -231,48 +264,29 @@ export function renderApp({
     </header>
   `;
 
-  const loading = state.loading ? '<section class="loading">Cargando semana...</section>' : "";
-  if (state.loading) {
-    return `
-      <main class="app-shell">
-        ${header}
-        <section class="app-content">${loading}</section>
-      </main>
+  const homeHtml = state.loading
+    ? '<section class="loading">Cargando semana...</section>'
+    : `
+      <section class="home-grid">
+        ${weekDates.map((iso) => renderHomeCard(iso, weekData, shiftSettings)).join("")}
+      </section>
     `;
-  }
 
-  const homeHtml = `
-    <section class="home-grid">
-      ${weekDates.map((iso) => renderHomeCard(iso, weekData, shiftSettings)).join("")}
-    </section>
-  `;
-
-  const selectorHtml = weekDates
-    .map((iso) =>
-      renderWeekSelectorButton({
-        dateIso: iso,
-        weekData,
-        shiftSettings,
-        selected: iso === state.selectedDateIso
-      })
-    )
-    .join("");
-
-  const editHtml = `
-    <section class="edit-layout">
-      <div class="week-selector">
-        ${selectorHtml}
-      </div>
-      ${renderEditorPanel(state.selectedDateIso, weekData, shiftSettings)}
-    </section>
-  `;
+  const modalHtml = renderEditorModal({
+    state,
+    weekData,
+    weekDates,
+    shiftSettings
+  });
 
   return `
     <main class="app-shell">
       ${header}
       <section class="app-content">
-        ${state.view === "home" ? homeHtml : editHtml}
+        ${homeHtml}
       </section>
     </main>
+    ${modalHtml}
   `;
 }
+
