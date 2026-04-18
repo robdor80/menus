@@ -1,67 +1,69 @@
-# Menu Semanal
+# Menu Semanal (version estatica)
 
-Web app responsive (mobile-first) para planificar menus semanales por dia.
+Aplicacion web familiar para menus semanales, sin build ni dependencias npm.
 
-## Stack
+## Base tecnica
 
-- Vite
-- JavaScript modular (ES Modules)
-- Firebase Firestore (SDK modular)
-- CSS mobile-first
+- HTML + CSS + JavaScript modular
+- Firebase Firestore por CDN (sin bundlers)
+- GitHub Pages directo (sin Actions, sin dist)
 
-## Desarrollo local
+## Archivos principales
 
-1. Instalar dependencias:
+- `index.html`
+- `styles.css`
+- `app.js`
+- `firebase-config.js`
+- `js/` (modulos de apoyo)
 
-```bash
-npm install
-```
+## Como usar
 
-2. Crear `.env` desde `.env.example`.
-3. Arrancar:
+1. Sube estos archivos al repositorio.
+2. Publica GitHub Pages desde la rama y carpeta raiz que prefieras (`main` + `/root` suele ser lo mas simple).
+3. Abre la URL de Pages.
 
-```bash
-npm run dev
-```
+No hace falta:
 
-## Variables de entorno
+- `npm install`
+- `npm run build`
+- `vite`
+- `dist`
 
-Requeridas para Firebase:
+## Configuracion de Firebase
 
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
+Edita `firebase-config.js`:
 
-Opcional para turnos (6x6):
+1. Crea proyecto en Firebase Console.
+2. Crea app web.
+3. Copia credenciales en `firebaseSetup.config`.
+4. Cambia `enabled` a `true`.
 
-- `VITE_SHIFT_BASE_DATE` (`YYYY-MM-DD`)
+Estructura usada en Firestore:
 
-## Deploy en GitHub Pages
+- Coleccion: `weeks`
+- Documento por semana (`weekId`, por ejemplo `2026-W16`)
+- Campo `days` como mapa por fecha ISO (`YYYY-MM-DD`)
 
-Este repo esta preparado para publicar en:
+Lazy-write:
 
-- `https://robdor80.github.io/menus/`
+- Si una semana no existe, la app la renderiza vacia en memoria.
+- Solo crea documento remoto al primer guardado con contenido real.
 
-Detalles tecnicos:
+Si Firebase no esta configurado o falla, la app muestra un aviso visible y sigue en modo local para que no se quede en blanco.
 
-- `vite.config.js` usa `base: "/menus/"`.
-- El workflow `.github/workflows/deploy.yml` construye con Vite y publica el contenido de `dist` en GitHub Pages.
-- No hace falta subir `dist` manualmente.
+## Turnos 6x6
 
-### Secrets de GitHub Actions
+El turno se calcula automaticamente desde una fecha base configurable (`shiftSetup.baseDate`):
 
-En `Settings > Secrets and variables > Actions`, crea:
+1. Manana
+2. Manana
+3. Tarde
+4. Tarde
+5. Noche
+6. Noche
+7-12. Libre
 
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
-- `VITE_SHIFT_BASE_DATE` (opcional)
+Luego se repite.
 
-Si faltan variables de Firebase o falla su inicializacion, la app muestra un error visible en pantalla en lugar de quedarse en blanco.
+La estructura de datos deja preparada la posibilidad de override manual futuro.
 

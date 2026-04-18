@@ -1,0 +1,510 @@
+:root {
+  --bg-page: linear-gradient(180deg, #f6faf7 0%, #eef6f0 55%, #edf5ef 100%);
+  --bg-surface: #ffffff;
+  --text-main: #1d2722;
+  --text-soft: #5e6a63;
+  --border-soft: #d7e2d9;
+  --accent: #2f7b52;
+  --accent-soft: #dff2e5;
+  --danger-bg: #fdecea;
+  --danger-text: #7c2a21;
+  --info-bg: #e8f3fb;
+  --info-text: #1d4f7c;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --shadow-soft: 0 8px 24px rgba(22, 51, 33, 0.09);
+  --shift-libre: #e8f4ec;
+  --shift-manana: #fff3dc;
+  --shift-tarde: #ffe9df;
+  --shift-noche: #e9edfa;
+  --tap-size: 46px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", "Noto Sans", "Helvetica Neue", sans-serif;
+  background: var(--bg-page);
+  color: var(--text-main);
+  line-height: 1.45;
+  font-size: 17px;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0.9rem;
+}
+
+.app-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 0.95rem;
+  position: sticky;
+  top: 0.5rem;
+  z-index: 20;
+}
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.week-range {
+  margin: 0.2rem 0 0.8rem;
+  color: var(--text-soft);
+}
+
+.toolbar,
+.view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.toolbar button,
+.view-tabs button,
+.btn-card-edit,
+.btn-save {
+  min-height: var(--tap-size);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.toolbar button:disabled {
+  opacity: 0.48;
+  cursor: default;
+}
+
+.view-tabs {
+  margin-top: 0.65rem;
+}
+
+.view-tabs .is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.status {
+  margin-top: 0.6rem;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.94rem;
+}
+
+.status.info {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.status.error {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.app-content {
+  margin-top: 0.95rem;
+}
+
+.home-grid {
+  display: grid;
+  gap: 0.82rem;
+  grid-template-columns: 1fr;
+}
+
+.day-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 0.8rem;
+}
+
+.day-card.livre {
+  background: linear-gradient(180deg, var(--shift-libre), #ffffff);
+}
+
+.day-card.manana {
+  background: linear-gradient(180deg, var(--shift-manana), #ffffff);
+}
+
+.day-card.tarde {
+  background: linear-gradient(180deg, var(--shift-tarde), #ffffff);
+}
+
+.day-card.noche {
+  background: linear-gradient(180deg, var(--shift-noche), #ffffff);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.card-day {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.card-date {
+  margin: 0.1rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shift-pill {
+  padding: 0.18rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.83rem;
+}
+
+.saved-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.card-block {
+  margin-bottom: 0.56rem;
+}
+
+.card-block h3 {
+  margin: 0 0 0.26rem;
+  font-size: 0.93rem;
+}
+
+.line {
+  margin: 0.2rem 0;
+  font-size: 0.93rem;
+}
+
+.line .label {
+  color: var(--text-soft);
+}
+
+.note {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+  border-top: 1px dashed var(--border-soft);
+  padding-top: 0.35rem;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.45rem;
+}
+
+.btn-card-edit {
+  color: var(--accent);
+  border: none;
+  background: transparent;
+  min-height: 36px;
+  padding: 0.2rem 0;
+}
+
+.edit-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+}
+
+.week-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.week-day-btn {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.6rem;
+  text-align: left;
+  background: #fff;
+  cursor: pointer;
+  min-height: 94px;
+}
+
+.week-day-btn.livre {
+  background: linear-gradient(180deg, var(--shift-libre), #ffffff);
+}
+
+.week-day-btn.manana {
+  background: linear-gradient(180deg, var(--shift-manana), #ffffff);
+}
+
+.week-day-btn.tarde {
+  background: linear-gradient(180deg, var(--shift-tarde), #ffffff);
+}
+
+.week-day-btn.noche {
+  background: linear-gradient(180deg, var(--shift-noche), #ffffff);
+}
+
+.week-day-btn.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.week-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.week-day-name {
+  font-weight: 700;
+  font-size: 0.93rem;
+}
+
+.week-day-date {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.week-day-shift {
+  display: inline-block;
+  margin-top: 0.26rem;
+  font-size: 0.84rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.16rem 0.5rem;
+}
+
+.editor-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  padding: 0.82rem;
+}
+
+.editor-head h2 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.editor-head p {
+  margin: 0.3rem 0 0.74rem;
+  color: var(--text-soft);
+  font-size: 0.91rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.74rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.34rem;
+}
+
+.field label {
+  color: var(--text-soft);
+  font-size: 0.89rem;
+}
+
+.field input[readonly] {
+  background: #f8faf8;
+}
+
+.group {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.58rem;
+}
+
+.group legend {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  padding: 0 0.25rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.meal-box {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem;
+}
+
+.meal-title {
+  margin: 0 0 0.42rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.segmented {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  padding: 0.18rem;
+  background: #f9fbfa;
+  gap: 0.2rem;
+}
+
+.segmented label {
+  border-radius: 999px;
+  padding: 0.2rem 0.62rem;
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 0.83rem;
+  position: relative;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented .active {
+  background: var(--accent-soft);
+  color: #155130;
+  font-weight: 700;
+}
+
+.hidden {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  min-width: 158px;
+}
+
+.loading {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+@media (min-width: 600px) {
+  .app-shell {
+    padding: 1.1rem;
+  }
+
+  .week-selector {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  body {
+    font-size: 18px;
+  }
+
+  .app-shell {
+    padding: 1.25rem;
+  }
+
+  .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.95rem;
+  }
+
+  .edit-layout {
+    grid-template-columns: 360px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .week-selector {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    position: sticky;
+    top: 6.6rem;
+  }
+
+  .editor-panel {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .home-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
