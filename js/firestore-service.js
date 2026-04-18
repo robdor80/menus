@@ -101,11 +101,79 @@ export function createFirestoreClient(firebaseSetup) {
     await firestore.setDoc(ref, payload, { merge: true });
   }
 
+  function assertReady() {
+    if (!status.ready || !db || !firestore) {
+      throw new Error("Firebase no esta listo para esta operacion.");
+    }
+  }
+
+  async function getDocument(targetCollection, documentId) {
+    if (!status.ready || !db || !firestore) {
+      return { exists: false, data: null };
+    }
+    const ref = firestore.doc(db, targetCollection, documentId);
+    const snap = await firestore.getDoc(ref);
+    return {
+      exists: snap.exists(),
+      data: snap.exists() ? snap.data() : null
+    };
+  }
+
+  async function setDocument({
+    targetCollection,
+    documentId,
+    data,
+    merge = false
+  }) {
+    assertReady();
+    const ref = firestore.doc(db, targetCollection, documentId);
+    await firestore.setDoc(ref, data, { merge });
+  }
+
+  async function addDocument(targetCollection, data) {
+    assertReady();
+    const ref = await firestore.addDoc(firestore.collection(db, targetCollection), data);
+    return ref.id;
+  }
+
+  async function deleteDocument(targetCollection, documentId) {
+    assertReady();
+    const ref = firestore.doc(db, targetCollection, documentId);
+    await firestore.deleteDoc(ref);
+  }
+
+  async function listDocuments({
+    targetCollection,
+    orderByField = "createdAt",
+    direction = "desc",
+    limitCount = 50
+  }) {
+    if (!status.ready || !db || !firestore) {
+      return [];
+    }
+
+    const collectionRef = firestore.collection(db, targetCollection);
+    const q = firestore.query(
+      collectionRef,
+      firestore.orderBy(orderByField, direction),
+      firestore.limit(limitCount)
+    );
+    const snap = await firestore.getDocs(q);
+    return snap.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+  }
+
   return {
     status,
     initialize,
     getWeekDoc,
-    upsertWeekDay
+    upsertWeekDay,
+    getDocument,
+    setDocument,
+    addDocument,
+    deleteDocument,
+    listDocuments
   };
 }
-

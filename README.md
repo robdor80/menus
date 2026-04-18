@@ -2,6 +2,12 @@
 
 Aplicacion web familiar para menus semanales, sin build ni dependencias npm.
 
+Incluye tres secciones:
+
+- Menu
+- Compra
+- Historial
+
 ## Base tecnica
 
 - HTML + CSS + JavaScript modular
@@ -44,6 +50,19 @@ Estructura usada en Firestore:
 - Documento por semana (`weekId`, por ejemplo `2026-W16`)
 - Campo `days` como mapa por fecha ISO (`YYYY-MM-DD`)
 
+Modulo de compra semanal:
+
+- Coleccion activa: `shopping_active`
+- Documento activo: `current`
+- Estructura: `storesOrder` + `itemsByStore`
+- Cada item guarda: `id`, `text`, `store`, `checked`, `updatedAt`
+
+Historico de compra:
+
+- Coleccion: `shopping_history`
+- Un documento por compra finalizada
+- Cada documento guarda snapshot completo + `stats`
+
 Lazy-write:
 
 - Si una semana no existe, la app la renderiza vacia en memoria.
@@ -66,4 +85,3 @@ El turno se calcula automaticamente desde una fecha base configurable (`shiftSet
 Luego se repite.
 
 La estructura de datos deja preparada la posibilidad de override manual futuro.
-

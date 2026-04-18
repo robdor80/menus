@@ -2,9 +2,11 @@ import { fromISODate, formatDateLabel, formatDayLabel, formatDayShort } from "./
 import { calculateAutoShift, resolveShift } from "./shift-engine.js";
 import { CASA_FUERA, cleanText, createEmptyStoredDay, escapeHtml, normalizeStoredDay } from "./normalize.js";
 import { getDayDraft, getRobertoVisibility, hasStoredData } from "./week-service.js";
+import { renderPurchaseSection } from "./purchase-render.js";
+import { renderHistorySection } from "./history-render.js";
 
 function shiftClass(shift) {
-  if (shift === "Mañana") {
+  if (shift === "Ma\u00f1ana") {
     return "manana";
   }
   if (shift === "Tarde") {
@@ -40,7 +42,7 @@ function renderCasaLines(day) {
   return lines.join("");
 }
 
-function renderHomeCard(dateIso, weekData, shiftSettings, todayIso) {
+function renderMenuCard(dateIso, weekData, shiftSettings, todayIso) {
   const stored = weekData.days[dateIso] ? normalizeStoredDay(weekData.days[dateIso]) : createEmptyStoredDay();
   const roberto = getRobertoVisibility(stored);
   const shift = resolveShift(stored, dateIso, shiftSettings);
@@ -124,7 +126,7 @@ function renderCasaMode(name, mode) {
   `;
 }
 
-function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
+function renderMenuEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
   const dateObj = fromISODate(selectedDateIso);
   const draft = getDayDraft(weekData, selectedDateIso, shiftSettings);
   const autoShift = calculateAutoShift(selectedDateIso, shiftSettings);
@@ -144,7 +146,7 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
             ? `
               <fieldset class="group">
                 <legend>Roberto (trabajo)</legend>
-                <p class="hint">En turno de tarde suele ser donde mas se usa Roberto.</p>
+                <p class="hint">En turno de tarde suele ser donde más se usa Roberto.</p>
                 <div class="field">
                   <label for="roberto_comida">Comida</label>
                   <input id="roberto_comida" name="roberto_comida" type="text" value="${escapeHtml(draft.roberto.comida)}" />
@@ -204,7 +206,7 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
   `;
 }
 
-function renderEditorModal({ state, weekData, weekDates, shiftSettings }) {
+function renderMenuEditorModal({ state, weekData, weekDates, shiftSettings }) {
   if (!state.editorOpen) {
     return "";
   }
@@ -225,18 +227,55 @@ function renderEditorModal({ state, weekData, weekDates, shiftSettings }) {
       <div class="editor-modal-shell">
         <header class="editor-modal-header">
           <h2>Editar men&uacute; semanal</h2>
-          <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">×</button>
+          <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">&times;</button>
         </header>
         <div class="editor-modal-content">
           <section class="edit-layout">
             <div class="week-selector">
               ${selectorHtml}
             </div>
-            ${renderEditorPanel(state.selectedDateIso, weekData, shiftSettings, state.saving)}
+            ${renderMenuEditorPanel(state.selectedDateIso, weekData, shiftSettings, state.saving)}
           </section>
         </div>
       </div>
     </section>
+  `;
+}
+
+function renderSectionTabs(activeSection) {
+  return `
+    <nav class="section-tabs" aria-label="Secciones">
+      <button type="button" data-section="menu" class="${activeSection === "menu" ? "is-active" : ""}">Men&uacute;</button>
+      <button type="button" data-section="purchase" class="${activeSection === "purchase" ? "is-active" : ""}">Compra</button>
+      <button type="button" data-section="history" class="${activeSection === "history" ? "is-active" : ""}">Historial</button>
+    </nav>
+  `;
+}
+
+function renderMenuSection({ state, weekData, weekDates, weekRangeLabel, isCurrentWeek, shiftSettings, todayIso }) {
+  const controls = `
+    <section class="menu-controls">
+      <p class="week-range">${escapeHtml(weekRangeLabel)}</p>
+      <div class="toolbar">
+        <button type="button" data-nav="prev">Semana anterior</button>
+        <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
+        <button type="button" data-nav="next">Semana siguiente</button>
+      </div>
+    </section>
+  `;
+
+  const content = state.loading
+    ? '<section class="loading">Cargando semana...</section>'
+    : `
+      <section class="home-grid">
+        ${weekDates.map((iso) => renderMenuCard(iso, weekData, shiftSettings, todayIso)).join("")}
+      </section>
+    `;
+
+  return `
+    ${controls}
+    ${content}
+    ${renderMenuEditorModal({ state, weekData, weekDates, shiftSettings })}
   `;
 }
 
@@ -247,50 +286,42 @@ export function renderApp({
   weekRangeLabel,
   isCurrentWeek,
   shiftSettings,
-  todayIso
+  todayIso,
+  purchaseData,
+  historyEntries
 }) {
-  const header = `
-    <header class="app-header">
-      <div class="title-row">
-        <h1 class="app-title">Menu Semanal</h1>
-      </div>
-      <p class="week-range">${escapeHtml(weekRangeLabel)}</p>
-
-      <div class="toolbar">
-        <button type="button" data-nav="prev">Semana anterior</button>
-        <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
-        <button type="button" data-nav="next">Semana siguiente</button>
-      </div>
-
-      ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
-      ${state.infoMessage ? `<div class="status info">${escapeHtml(state.infoMessage)}</div>` : ""}
-      ${state.errorMessage ? `<div class="status error">${escapeHtml(state.errorMessage)}</div>` : ""}
-    </header>
-  `;
-
-  const homeHtml = state.loading
-    ? '<section class="loading">Cargando semana...</section>'
-    : `
-      <section class="home-grid">
-        ${weekDates.map((iso) => renderHomeCard(iso, weekData, shiftSettings, todayIso)).join("")}
-      </section>
-    `;
-
-  const modalHtml = renderEditorModal({
-    state,
-    weekData,
-    weekDates,
-    shiftSettings
-  });
+  let sectionHtml = "";
+  if (state.activeSection === "menu") {
+    sectionHtml = renderMenuSection({
+      state,
+      weekData,
+      weekDates,
+      weekRangeLabel,
+      isCurrentWeek,
+      shiftSettings,
+      todayIso
+    });
+  } else if (state.activeSection === "purchase") {
+    sectionHtml = renderPurchaseSection(state, purchaseData);
+  } else {
+    sectionHtml = renderHistorySection(state, historyEntries);
+  }
 
   return `
     <main class="app-shell">
-      ${header}
+      <header class="app-header">
+        <div class="title-row">
+          <h1 class="app-title">Men&uacute; Semanal</h1>
+        </div>
+        ${renderSectionTabs(state.activeSection)}
+        ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
+        ${state.infoMessage ? `<div class="status info">${escapeHtml(state.infoMessage)}</div>` : ""}
+        ${state.errorMessage ? `<div class="status error">${escapeHtml(state.errorMessage)}</div>` : ""}
+      </header>
       <section class="app-content">
-        ${homeHtml}
+        ${sectionHtml}
       </section>
     </main>
     ${state.toastMessage ? `<div class="toast toast-show">${escapeHtml(state.toastMessage)}</div>` : ""}
-    ${modalHtml}
   `;
 }
