@@ -44,7 +44,8 @@ function renderHomeCard(dateIso, weekData, shiftSettings) {
   const stored = weekData.days[dateIso] ? normalizeStoredDay(weekData.days[dateIso]) : createEmptyStoredDay();
   const roberto = getRobertoVisibility(stored);
   const shift = resolveShift(stored, dateIso, shiftSettings);
-  const robertoBlock = roberto.show
+  const canShowRoberto = shift === "Tarde" && roberto.show;
+  const robertoBlock = canShowRoberto
     ? `
       <section class="card-block">
         <h3>Roberto 🥡</h3>
@@ -275,4 +276,3 @@ export function renderApp({
     </main>
   `;
 }
-

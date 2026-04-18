@@ -4,15 +4,15 @@
 // 3) Pega los valores abajo y cambia enabled a true.
 
 export const firebaseSetup = {
-  enabled: false,
+  enabled: true,
   collectionName: "weeks",
   config: {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyAc1xl6kbzB20xtMq48q-7d_o-0qMEo5MM",
+    authDomain: "menu-semanal-casa.firebaseapp.com",
+    projectId: "menu-semanal-casa",
+    storageBucket: "menu-semanal-casa.firebasestorage.app",
+    messagingSenderId: "308735669254",
+    appId: "1:308735669254:web:222da56cc51b22afa37f87"
   }
 };
 
@@ -21,4 +21,3 @@ export const firebaseSetup = {
 export const shiftSetup = {
   baseDate: "2026-04-18"
 };
-
