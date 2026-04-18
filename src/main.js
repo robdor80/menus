@@ -45,7 +45,53 @@ onViewChange((view) => {
   store.setState((state) => ({ ...state, view }));
 });
 
+installGlobalErrorHandlers();
+render();
 void ensureWeekLoaded();
+
+function getErrorMessage(error, fallbackMessage) {
+  if (!(error instanceof Error)) {
+    return fallbackMessage;
+  }
+
+  if (error.message.includes("Faltan variables Firebase")) {
+    return "Faltan variables de entorno de Firebase. Revisa la configuracion VITE_FIREBASE_*.";
+  }
+
+  if (error.message.toLowerCase().includes("firebase")) {
+    return `Error de Firebase: ${error.message}`;
+  }
+
+  return error.message || fallbackMessage;
+}
+
+function renderFatal(message, details = "") {
+  const safeTarget = appRoot ?? document.body;
+  if (!safeTarget) {
+    return;
+  }
+
+  safeTarget.innerHTML = `
+    <main class="app-shell">
+      <section class="app-header">
+        <h1 class="app-title">Men&uacute; Semanal</h1>
+        <div class="status-banner status-error">${message}</div>
+        ${details ? `<p class="week-meta">${details}</p>` : ""}
+      </section>
+    </main>
+  `;
+}
+
+function installGlobalErrorHandlers() {
+  window.addEventListener("error", (event) => {
+    renderFatal("La aplicacion encontro un error inesperado.", event.message ?? "");
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    const reason = event.reason instanceof Error ? event.reason.message : String(event.reason ?? "");
+    renderFatal("No se pudo iniciar correctamente la aplicacion.", reason);
+  });
+}
 
 function getCurrentWeekDates(state) {
   const weekStartDate = fromISODate(state.currentWeekStartIso);
@@ -89,7 +135,7 @@ async function ensureWeekLoaded(force = false) {
     store.setState((prev) => ({
       ...prev,
       loading: false,
-      errorMessage: error instanceof Error ? error.message : "No se pudo cargar la semana."
+      errorMessage: getErrorMessage(error, "No se pudo cargar la semana.")
     }));
   }
 }
@@ -206,7 +252,7 @@ async function handleSaveDay(formElement) {
     store.setState((prev) => ({
       ...prev,
       saving: false,
-      errorMessage: error instanceof Error ? error.message : "No se pudo guardar el dia."
+      errorMessage: getErrorMessage(error, "No se pudo guardar el dia.")
     }));
   }
 }
@@ -279,6 +325,11 @@ function bindEvents() {
 }
 
 function render() {
+  if (!appRoot) {
+    renderFatal("No se encontro el contenedor principal #app.");
+    return;
+  }
+
   const state = store.getState();
   const weekDates = getCurrentWeekDates(state);
   const weekData = getCurrentWeekData(state) ?? {
