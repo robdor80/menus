@@ -222,10 +222,6 @@ function bindEvents() {
     await ensureWeekLoaded();
   });
 
-  document.querySelector("[data-open-editor]")?.addEventListener("click", () => {
-    setState({ editorOpen: true, errorMessage: "" });
-  });
-
   document.querySelectorAll("[data-close-editor]").forEach((button) => {
     button.addEventListener("click", () => {
       if (state.saving) {

@@ -79,7 +79,7 @@ function renderHomeCard(dateIso, weekData, shiftSettings, todayIso) {
       </section>
       ${noteHtml}
       <footer class="card-footer">
-        <button class="btn-card-edit" type="button" data-open-edit="${escapeHtml(dateIso)}">Editar dia</button>
+        <button class="btn-card-edit" type="button" data-open-edit="${escapeHtml(dateIso)}">Editar d&iacute;a</button>
       </footer>
     </article>
   `;
@@ -260,7 +260,6 @@ export function renderApp({
         <button type="button" data-nav="prev">Semana anterior</button>
         <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
         <button type="button" data-nav="next">Semana siguiente</button>
-        <button type="button" class="btn-open-editor" data-open-editor>Editar men&uacute; semanal</button>
       </div>
 
       ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
