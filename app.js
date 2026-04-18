@@ -200,6 +200,16 @@ function parseDraft(formData) {
   };
 }
 
+function splitStoreItemsInput(value) {
+  if (typeof value !== "string") {
+    return [];
+  }
+  return value
+    .split(",")
+    .map((part) => cleanText(part))
+    .filter(Boolean);
+}
+
 function syncSegmentedUi() {
   const form = document.querySelector("#day-form");
   if (!form) {
@@ -367,17 +377,30 @@ async function onSubmitStoreItem(formData) {
     return;
   }
 
-  const text = cleanText(formData.get("text"));
+  const rawInput = typeof formData.get("text") === "string" ? formData.get("text") : "";
+  const text = cleanText(rawInput);
   if (!text) {
     return;
   }
 
   const editingId = state.purchaseStoreEditingItemId;
-  const next = editingId
-    ? updateItemText(state.purchaseData, editingId, text)
-    : addItem(state.purchaseData, { storeName: store, text });
+  if (editingId) {
+    const next = updateItemText(state.purchaseData, editingId, text);
+    await persistPurchaseChange(next, "Producto actualizado");
+  } else {
+    const entries = splitStoreItemsInput(rawInput);
+    if (entries.length === 0) {
+      return;
+    }
 
-  await persistPurchaseChange(next, editingId ? "Producto actualizado" : "Producto a\u00f1adido");
+    let next = state.purchaseData;
+    entries.forEach((entry) => {
+      next = addItem(next, { storeName: store, text: entry });
+    });
+
+    const message = entries.length === 1 ? "Producto a\u00f1adido" : `${entries.length} productos a\u00f1adidos`;
+    await persistPurchaseChange(next, message);
+  }
 
   setState({
     purchaseStoreEditingItemId: "",

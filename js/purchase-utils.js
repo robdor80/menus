@@ -30,7 +30,7 @@ export const STORE_ICON_URLS = {
   Gadis:
     "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Favicon_gadis.svg/250px-Favicon_gadis.svg.png",
   Froiz:
-    "https://media.licdn.com/dms/image/v2/D4D0BAQGAziguLS36Zg/company-logo_200_200/B4DZX6n.udH4AM-/0/1743666539779/distribucionesfroiz_logo?e=2147483647&v=beta&t=pIy1f9MwL3wNsRhat576-4utVskmRtKPUDRH8AWSHMg",
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Distribuciones_Froiz_supermercados_vectorial.svg",
   Erosky:
     "https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/Eroski.svg/1280px-Eroski.svg.png",
   Alcampo:

@@ -661,11 +661,13 @@ body.modal-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
 }
 
 .store-icon__img,
 .store-icon-mini__img,
 .store-icon-big__img {
+  display: block;
   width: 24px;
   height: 24px;
   object-fit: contain;

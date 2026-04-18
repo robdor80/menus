@@ -3,13 +3,14 @@ import { getStats, getStoreIconMeta } from "./purchase-utils.js";
 
 function renderStoreIcon(store, className = "store-icon") {
   const icon = getStoreIconMeta(store);
-  const imageHtml = icon.url
-    ? `<img class="${className}__img" src="${escapeHtml(icon.url)}" alt="${escapeHtml(store)}" loading="lazy" referrerpolicy="no-referrer" />`
+  const hasImage = Boolean(icon.url);
+  const imageHtml = hasImage
+    ? `<img class="${className}__img" src="${escapeHtml(icon.url)}" alt="${escapeHtml(store)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;" />`
     : "";
   return `
     <span class="${className}">
       ${imageHtml}
-      <span class="${className}__fallback" aria-hidden="true">${escapeHtml(icon.emoji)}</span>
+      <span class="${className}__fallback" aria-hidden="true" ${hasImage ? "hidden" : ""}>${escapeHtml(icon.emoji)}</span>
     </span>
   `;
 }
@@ -113,11 +114,16 @@ function renderStoreModal(state, purchaseData) {
                 name="text"
                 type="text"
                 value="${escapeHtml(state.purchaseStoreInputText || "")}" 
-                placeholder="Ej: leche, pan, tomate..."
+                placeholder="Ej: leche, pan, tomate"
               />
               <button type="submit" ${state.purchaseSaving ? "disabled" : ""}>${submitLabel}</button>
             </div>
           </form>
+          ${
+            isEditing
+              ? ""
+              : '<p class="purchase-empty-line">Tip: puedes escribir varios productos separados por comas.</p>'
+          }
 
           ${
             isEditing
@@ -190,7 +196,7 @@ export function renderPurchaseSection(state, purchaseData) {
     <section class="purchase-section">
       <header class="purchase-header">
         <h2>Compra semanal</h2>
-        <p>${stats.itemsTotal} productos · ${stats.checkedCount} comprados · ${stats.pendingCount} pendientes</p>
+        <p>${stats.itemsTotal} productos &middot; ${stats.checkedCount} comprados &middot; ${stats.pendingCount} pendientes</p>
         <div class="purchase-toolbar">
           <button type="button" data-open-purchase-editor>Editar compra</button>
           <button type="button" class="primary" data-finish-purchase ${state.purchaseSaving ? "disabled" : ""}>Compra finalizada</button>
@@ -202,3 +208,4 @@ export function renderPurchaseSection(state, purchaseData) {
     ${renderPurchaseEditor(state, purchaseData)}
   `;
 }
+
