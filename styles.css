@@ -79,7 +79,7 @@ textarea {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
-  padding: 0.95rem;
+  padding: 1rem;
   position: sticky;
   top: 0.5rem;
   z-index: 20;
@@ -98,7 +98,7 @@ textarea {
 }
 
 .week-range {
-  margin: 0.2rem 0 0.8rem;
+  margin: 0.24rem 0 0.88rem;
   color: var(--text-soft);
 }
 
@@ -117,7 +117,7 @@ textarea {
   min-height: var(--tap-size);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  padding: 0.45rem 0.95rem;
+  padding: 0.48rem 1rem;
   background: #fff;
   cursor: pointer;
 }
@@ -132,7 +132,7 @@ textarea {
   border-color: var(--accent) !important;
   color: #ffffff !important;
   font-weight: 700;
-  min-width: 168px;
+  min-width: 186px;
   text-align: center;
 }
 
@@ -263,6 +263,12 @@ textarea {
   color: var(--text-soft);
 }
 
+.line.line-soft {
+  color: #89958d;
+  font-size: 0.86rem;
+  font-style: italic;
+}
+
 .note {
   margin: 0.3rem 0 0;
   font-size: 0.9rem;
@@ -375,6 +381,22 @@ textarea {
   font-size: 0.91rem;
 }
 
+.shift-auto-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #eff7f1;
+  border: 1px solid #d6e8da;
+  border-radius: 999px;
+  padding: 0.26rem 0.66rem;
+  font-size: 0.9rem;
+}
+
+.shift-auto-line span {
+  color: #1d5f3b;
+  font-weight: 700;
+}
+
 .form-grid {
   display: grid;
   gap: 0.74rem;
@@ -430,14 +452,14 @@ textarea {
   display: inline-flex;
   border-radius: 999px;
   border: 1px solid var(--border-soft);
-  padding: 0.18rem;
+  padding: 0.2rem;
   background: #f9fbfa;
   gap: 0.2rem;
 }
 
 .segmented label {
   border-radius: 999px;
-  padding: 0.2rem 0.62rem;
+  padding: 0.24rem 0.7rem;
   cursor: pointer;
   color: var(--text-soft);
   font-size: 0.83rem;
@@ -465,6 +487,10 @@ textarea {
   justify-content: flex-end;
   gap: 0.5rem;
   flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.45rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 35%);
 }
 
 .btn-cancel {
@@ -508,13 +534,16 @@ body.modal-open {
 }
 
 .editor-modal-header {
-  padding: 0.82rem 0.9rem;
+  padding: 0.72rem 0.88rem;
   border-bottom: 1px solid var(--border-soft);
   background: var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .editor-modal-header h2 {
@@ -523,17 +552,35 @@ body.modal-open {
 }
 
 .editor-modal-close {
-  min-height: 40px;
-  border-radius: 999px;
+  min-height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
   border: 1px solid var(--border-soft);
   background: #fff;
-  padding: 0.28rem 0.72rem;
+  padding: 0;
+  font-size: 1.35rem;
+  line-height: 1;
   cursor: pointer;
 }
 
 .editor-modal-content {
   overflow: auto;
-  padding: 0.75rem;
+  padding: 0.78rem 0.78rem calc(0.9rem + env(safe-area-inset-bottom));
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: rgba(24, 58, 36, 0.94);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.48rem 0.92rem;
+  font-size: 0.9rem;
+  z-index: 180;
+  box-shadow: 0 10px 24px rgba(10, 26, 17, 0.28);
+  pointer-events: none;
 }
 
 .loading {
@@ -568,14 +615,15 @@ body.modal-open {
   }
 
   .edit-layout {
-    grid-template-columns: 340px minmax(0, 1fr);
+    grid-template-columns: 370px minmax(0, 1fr);
     align-items: start;
+    gap: 1rem;
   }
 
   .week-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     position: sticky;
-    top: 6.6rem;
+    top: 0.1rem;
   }
 
   .editor-panel {
@@ -583,17 +631,24 @@ body.modal-open {
   }
 
   .editor-modal-shell {
-    width: min(98vw, 1400px);
-    height: min(96dvh, 1100px);
+    width: min(96vw, 1260px);
+    height: min(95dvh, 980px);
     margin: auto;
-    border-radius: 18px;
+    border-radius: 22px;
     overflow: hidden;
     border: 1px solid var(--border-soft);
     box-shadow: 0 22px 52px rgba(12, 32, 20, 0.3);
   }
 
   .editor-modal-content {
-    padding: 0.95rem;
+    padding: 1.05rem 1.1rem 1.15rem;
+  }
+
+  .toast {
+    left: auto;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    transform: none;
   }
 }
 

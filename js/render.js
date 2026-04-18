@@ -34,7 +34,7 @@ function renderCasaLines(day) {
   }
 
   if (lines.length === 0) {
-    lines.push('<p class="line"><span class="label">Casa:</span> sin plan</p>');
+    lines.push('<p class="line line-soft">Sin definir</p>');
   }
 
   return lines.join("");
@@ -134,14 +134,10 @@ function renderEditorPanel(selectedDateIso, weekData, shiftSettings, saving) {
     <section class="editor-panel">
       <header class="editor-head">
         <h2>${escapeHtml(formatDayLabel(dateObj))} ${escapeHtml(formatDateLabel(dateObj))}</h2>
-        <p>Turno automatico 6x6: <strong>${escapeHtml(autoShift)}</strong></p>
+        <p class="shift-auto-line">Turno automatico <span>${escapeHtml(autoShift)}</span></p>
       </header>
       <form id="day-form" class="form-grid">
-        <div class="field">
-          <label for="shift_readonly">Turno</label>
-          <input id="shift_readonly" type="text" readonly value="${escapeHtml(draft.shift)}" />
-          <input type="hidden" name="shift" value="${escapeHtml(draft.shift)}" />
-        </div>
+        <input type="hidden" name="shift" value="${escapeHtml(draft.shift)}" />
 
         ${
           showRobertoEditor
@@ -225,11 +221,11 @@ function renderEditorModal({ state, weekData, weekDates, shiftSettings }) {
     .join("");
 
   return `
-    <section class="editor-modal-overlay" role="dialog" aria-modal="true" aria-label="Editar menú semanal">
+    <section class="editor-modal-overlay" role="dialog" aria-modal="true" aria-label="Editar menu semanal">
       <div class="editor-modal-shell">
         <header class="editor-modal-header">
-          <h2>Editar menú semanal</h2>
-          <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">Cerrar</button>
+          <h2>Editar men&uacute; semanal</h2>
+          <button type="button" class="editor-modal-close" data-close-editor aria-label="Cerrar editor">×</button>
         </header>
         <div class="editor-modal-content">
           <section class="edit-layout">
@@ -264,7 +260,7 @@ export function renderApp({
         <button type="button" data-nav="prev">Semana anterior</button>
         <button type="button" data-nav="today" ${isCurrentWeek ? "disabled" : ""}>Hoy</button>
         <button type="button" data-nav="next">Semana siguiente</button>
-        <button type="button" class="btn-open-editor" data-open-editor>Editar menú semanal</button>
+        <button type="button" class="btn-open-editor" data-open-editor>Editar men&uacute; semanal</button>
       </div>
 
       ${state.firebaseMessage ? `<div class="status ${state.firebaseReady ? "info" : "error"}">${escapeHtml(state.firebaseMessage)}</div>` : ""}
@@ -295,6 +291,7 @@ export function renderApp({
         ${homeHtml}
       </section>
     </main>
+    ${state.toastMessage ? `<div class="toast toast-show">${escapeHtml(state.toastMessage)}</div>` : ""}
     ${modalHtml}
   `;
 }

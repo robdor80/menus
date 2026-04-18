@@ -20,6 +20,7 @@ const shiftSettings = getShiftSettings(shiftSetup?.baseDate);
 
 const todayIso = getTodayISO();
 const todayWeekStartIso = toISODate(startOfWeekMonday(fromISODate(todayIso)));
+let toastTimerId = null;
 
 const state = {
   view: "home",
@@ -27,6 +28,7 @@ const state = {
   loading: false,
   saving: false,
   infoMessage: "",
+  toastMessage: "",
   errorMessage: "",
   firebaseReady: false,
   firebaseMessage: "",
@@ -39,6 +41,17 @@ const state = {
 function setState(patch) {
   Object.assign(state, typeof patch === "function" ? patch(state) : patch);
   render();
+}
+
+function showToast(message) {
+  if (toastTimerId) {
+    clearTimeout(toastTimerId);
+  }
+  setState({ toastMessage: message });
+  toastTimerId = window.setTimeout(() => {
+    state.toastMessage = "";
+    render();
+  }, 1800);
 }
 
 function currentWeekDates() {
@@ -155,10 +168,10 @@ async function onSaveDay(form) {
         ...prev.weeksByStart,
         [prev.currentWeekStartIso]: result.weekData
       },
-      infoMessage: result.persistedRemote
-        ? "Dia guardado en Firestore."
-        : "Dia guardado en memoria local (Firebase no activo)."
+      infoMessage: ""
     }));
+
+    showToast(result.persistedRemote ? "Guardado" : "Guardado local");
   } catch (error) {
     setState({
       saving: false,
