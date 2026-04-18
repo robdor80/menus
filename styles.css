@@ -941,7 +941,7 @@ body.modal-open {
   border-radius: 18px 18px 0 0;
   border: 1px solid var(--border-soft);
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
 }
 
 .store-editor-header {
@@ -995,6 +995,11 @@ body.modal-open {
   align-items: center;
 }
 
+.store-item-input-actions {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
 .store-item-input-row button {
   min-height: 42px;
   border-radius: 999px;
@@ -1003,6 +1008,12 @@ body.modal-open {
   color: #fff;
   padding: 0.2rem 0.85rem;
   cursor: pointer;
+}
+
+.store-item-input-row button.secondary {
+  border-color: var(--border-soft);
+  background: #fff;
+  color: var(--text-main);
 }
 
 .store-item-input-row button:disabled {
@@ -1082,23 +1093,6 @@ body.modal-open {
 .store-item-actions .danger {
   border-color: #efc9c4;
   color: #9d2e21;
-}
-
-.store-editor-footer {
-  border-top: 1px solid var(--border-soft);
-  padding: 0.58rem 0.76rem calc(0.62rem + env(safe-area-inset-bottom));
-  display: flex;
-  justify-content: flex-end;
-}
-
-.store-editor-footer .primary {
-  min-height: 42px;
-  border-radius: 999px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #fff;
-  padding: 0.15rem 0.92rem;
-  cursor: pointer;
 }
 
 .purchase-action-overlay {

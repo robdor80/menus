@@ -174,7 +174,10 @@ function renderStoreModal(state, purchaseData) {
                 value="${escapeHtml(state.purchaseStoreInputText || "")}" 
                 placeholder="Ej: leche, pan, tomate"
               />
-              <button type="submit" ${state.purchaseSaving ? "disabled" : ""}>${submitLabel}</button>
+              <div class="store-item-input-actions">
+                <button type="submit" ${state.purchaseSaving ? "disabled" : ""}>${submitLabel}</button>
+                <button type="button" class="secondary" data-close-store-editor ${state.purchaseSaving ? "disabled" : ""}>Finalizar</button>
+              </div>
             </div>
           </form>
           ${
@@ -219,9 +222,6 @@ function renderStoreModal(state, purchaseData) {
           </section>
         </div>
 
-        <footer class="store-editor-footer">
-          <button type="button" class="primary" data-close-store-editor>Finalizar</button>
-        </footer>
       </div>
     </section>
   `;

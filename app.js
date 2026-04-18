@@ -40,6 +40,8 @@ const shiftSettings = getShiftSettings(shiftSetup?.baseDate);
 const todayIso = getTodayISO();
 const todayWeekStartIso = toISODate(startOfWeekMonday(fromISODate(todayIso)));
 let toastTimerId = null;
+let previousStoreModalStore = "";
+let previousStoreEditingItemId = "";
 
 const state = {
   activeSection: "menu",
@@ -988,8 +990,22 @@ function render() {
 
 function focusStoreInputIfNeeded() {
   if (!state.purchaseStoreModalStore) {
+    previousStoreModalStore = "";
+    previousStoreEditingItemId = "";
     return;
   }
+
+  const shouldFocus =
+    state.purchaseStoreModalStore !== previousStoreModalStore ||
+    state.purchaseStoreEditingItemId !== previousStoreEditingItemId;
+
+  previousStoreModalStore = state.purchaseStoreModalStore;
+  previousStoreEditingItemId = state.purchaseStoreEditingItemId;
+
+  if (!shouldFocus) {
+    return;
+  }
+
   const input = document.querySelector("#store_item_text");
   if (!(input instanceof HTMLInputElement)) {
     return;
