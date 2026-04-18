@@ -30,6 +30,7 @@ const state = {
   errorMessage: "",
   firebaseReady: false,
   firebaseMessage: "",
+  autoScrolledWeekKey: "",
   currentWeekStartIso: todayWeekStartIso,
   selectedDateIso: todayIso,
   weeksByStart: {}
@@ -201,6 +202,7 @@ function bindEvents() {
     setState({
       currentWeekStartIso: todayWeekStartIso,
       selectedDateIso: todayIso,
+      autoScrolledWeekKey: "",
       infoMessage: "",
       errorMessage: ""
     });
@@ -281,6 +283,33 @@ function render() {
   document.body.classList.toggle("modal-open", state.editorOpen);
   bindEvents();
   syncSegmentedUi();
+  maybeAutoScrollToTodayCard();
+}
+
+function maybeAutoScrollToTodayCard() {
+  if (state.loading || state.editorOpen) {
+    return;
+  }
+  if (state.currentWeekStartIso !== todayWeekStartIso) {
+    return;
+  }
+  if (state.autoScrolledWeekKey === state.currentWeekStartIso) {
+    return;
+  }
+
+  const todayCard = document.querySelector(`[data-day-card="${todayIso}"]`);
+  if (!todayCard) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    todayCard.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  });
+
+  state.autoScrolledWeekKey = state.currentWeekStartIso;
 }
 
 function setFatalError(message) {

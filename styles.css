@@ -128,9 +128,12 @@ textarea {
 }
 
 .btn-open-editor {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  min-width: 168px;
+  text-align: center;
 }
 
 .view-tabs {

@@ -60,7 +60,7 @@ function renderHomeCard(dateIso, weekData, shiftSettings) {
   const dateObj = fromISODate(dateIso);
 
   return `
-    <article class="day-card ${shiftClass(shift)}">
+    <article class="day-card ${shiftClass(shift)}" data-day-card="${escapeHtml(dateIso)}">
       <header class="card-head">
         <div>
           <p class="card-day">${escapeHtml(formatDayLabel(dateObj))}</p>
@@ -289,4 +289,3 @@ export function renderApp({
     ${modalHtml}
   `;
 }
-
