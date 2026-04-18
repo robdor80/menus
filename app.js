@@ -20,10 +20,12 @@ import {
   getItemById,
   getStats,
   isPurchaseEmpty,
+  moveItem,
   toggleItemChecked,
   updateItemText
 } from "./js/purchase-utils.js";
 import {
+  deleteHistoryEntry,
   finalizePurchase,
   loadActivePurchase,
   loadHistory,
@@ -63,6 +65,9 @@ const state = {
   purchaseStoreModalStore: "",
   purchaseStoreInputText: "",
   purchaseStoreEditingItemId: "",
+  purchaseActionItemId: "",
+  purchaseActionText: "",
+  purchaseActionStore: "",
 
   historyLoaded: false,
   historyLoading: false,
@@ -204,9 +209,18 @@ function splitStoreItemsInput(value) {
   if (typeof value !== "string") {
     return [];
   }
+
+  const capitalizeFirst = (text) => {
+    if (!text) {
+      return "";
+    }
+    return text.charAt(0).toLocaleUpperCase("es-ES") + text.slice(1);
+  };
+
   return value
     .split(",")
     .map((part) => cleanText(part))
+    .map((part) => capitalizeFirst(part))
     .filter(Boolean);
 }
 
@@ -315,6 +329,29 @@ function closeStoreModal() {
   });
 }
 
+function openPurchaseActionModal(itemId) {
+  if (!itemId) {
+    return;
+  }
+  const item = getItemById(state.purchaseData, itemId);
+  if (!item) {
+    return;
+  }
+  setState({
+    purchaseActionItemId: item.id,
+    purchaseActionText: item.text,
+    purchaseActionStore: item.store
+  });
+}
+
+function closePurchaseActionModal() {
+  setState({
+    purchaseActionItemId: "",
+    purchaseActionText: "",
+    purchaseActionStore: ""
+  });
+}
+
 function startStoreItemEdit(itemId) {
   if (!itemId || !state.purchaseStoreModalStore) {
     return;
@@ -420,6 +457,44 @@ async function onDeleteStoreItem(itemId) {
   }
 }
 
+async function onSavePurchaseAction(formData) {
+  const itemId = state.purchaseActionItemId;
+  if (!itemId) {
+    return;
+  }
+
+  const text = cleanText(formData.get("text"));
+  if (!text) {
+    return;
+  }
+
+  const targetStore = cleanText(formData.get("store")) || "Otros";
+  let next = updateItemText(state.purchaseData, itemId, text);
+  const updatedItem = getItemById(next, itemId);
+  if (updatedItem && updatedItem.store !== targetStore) {
+    next = moveItem(next, itemId, targetStore);
+  }
+
+  await persistPurchaseChange(next, "Producto actualizado");
+  closePurchaseActionModal();
+}
+
+async function onDeletePurchaseAction() {
+  const itemId = state.purchaseActionItemId;
+  if (!itemId) {
+    return;
+  }
+
+  const confirmDelete = window.confirm("Eliminar este producto?");
+  if (!confirmDelete) {
+    return;
+  }
+
+  const next = deleteItem(state.purchaseData, itemId);
+  await persistPurchaseChange(next, "Producto eliminado");
+  closePurchaseActionModal();
+}
+
 async function onFinishPurchase() {
   const stats = getStats(state.purchaseData);
   if (stats.itemsTotal === 0) {
@@ -513,6 +588,37 @@ async function onRestoreHistoryEntry(historyId) {
   }
 }
 
+async function onDeleteHistoryEntry(historyId) {
+  if (!historyId) {
+    return;
+  }
+
+  const confirmDelete = window.confirm("Eliminar esta entrada del historial?");
+  if (!confirmDelete) {
+    return;
+  }
+
+  setState({
+    historyLoading: true,
+    errorMessage: ""
+  });
+
+  try {
+    await deleteHistoryEntry(firestoreClient, historyId);
+    setState((prev) => ({
+      historyLoading: false,
+      historyEntries: prev.historyEntries.filter((entry) => entry.id !== historyId),
+      historyExpandedIds: prev.historyExpandedIds.filter((id) => id !== historyId)
+    }));
+    showToast("Entrada eliminada");
+  } catch (error) {
+    setState({
+      historyLoading: false,
+      errorMessage: error instanceof Error ? error.message : "No se pudo eliminar la entrada."
+    });
+  }
+}
+
 async function onSectionChange(section) {
   if (!section || state.activeSection === section) {
     return;
@@ -525,6 +631,9 @@ async function onSectionChange(section) {
     purchaseStoreModalStore: "",
     purchaseStoreInputText: "",
     purchaseStoreEditingItemId: "",
+    purchaseActionItemId: "",
+    purchaseActionText: "",
+    purchaseActionStore: "",
     infoMessage: "",
     errorMessage: ""
   });
@@ -632,11 +741,70 @@ function bindEvents() {
   }
 
   document.querySelectorAll("[data-toggle-purchase-item]").forEach((button) => {
-    button.addEventListener("click", () => {
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    let startX = 0;
+    let startY = 0;
+
+    const clearTimer = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+
+    const openActions = () => {
       const itemId = button.getAttribute("data-toggle-purchase-item");
       if (!itemId) {
         return;
       }
+      longPressTriggered = true;
+      openPurchaseActionModal(itemId);
+    };
+
+    button.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) {
+        return;
+      }
+
+      longPressTriggered = false;
+      startX = event.clientX;
+      startY = event.clientY;
+      clearTimer();
+      longPressTimer = window.setTimeout(openActions, 520);
+    });
+
+    button.addEventListener("pointermove", (event) => {
+      if (!longPressTimer) {
+        return;
+      }
+      if (Math.abs(event.clientX - startX) > 8 || Math.abs(event.clientY - startY) > 8) {
+        clearTimer();
+      }
+    });
+
+    button.addEventListener("pointerup", clearTimer);
+    button.addEventListener("pointercancel", clearTimer);
+    button.addEventListener("pointerleave", clearTimer);
+
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      openActions();
+    });
+
+    button.addEventListener("click", (event) => {
+      const itemId = button.getAttribute("data-toggle-purchase-item");
+      if (!itemId) {
+        return;
+      }
+
+      if (longPressTriggered) {
+        event.preventDefault();
+        event.stopPropagation();
+        longPressTriggered = false;
+        return;
+      }
+
       void onTogglePurchaseItem(itemId);
     });
   });
@@ -709,6 +877,29 @@ function bindEvents() {
     cancelStoreItemEdit();
   });
 
+  document.querySelector(".purchase-action-overlay")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) {
+      closePurchaseActionModal();
+    }
+  });
+
+  const purchaseActionForm = document.querySelector("#purchase-action-form");
+  if (purchaseActionForm) {
+    purchaseActionForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const formData = new FormData(purchaseActionForm);
+      void onSavePurchaseAction(formData);
+    });
+  }
+
+  document.querySelector("[data-close-purchase-action]")?.addEventListener("click", () => {
+    closePurchaseActionModal();
+  });
+
+  document.querySelector("[data-delete-purchase-action]")?.addEventListener("click", () => {
+    void onDeletePurchaseAction();
+  });
+
   document.querySelectorAll("[data-finish-purchase]").forEach((button) => {
     button.addEventListener("click", () => {
       void onFinishPurchase();
@@ -744,6 +935,16 @@ function bindEvents() {
       void onRestoreHistoryEntry(id);
     });
   });
+
+  document.querySelectorAll("[data-delete-history]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.getAttribute("data-delete-history");
+      if (!id) {
+        return;
+      }
+      void onDeleteHistoryEntry(id);
+    });
+  });
 }
 
 function render() {
@@ -772,7 +973,13 @@ function render() {
   });
 
   appRoot.innerHTML = html;
-  document.body.classList.toggle("modal-open", state.editorOpen || state.purchaseEditOpen || Boolean(state.purchaseStoreModalStore));
+  document.body.classList.toggle(
+    "modal-open",
+    state.editorOpen ||
+      state.purchaseEditOpen ||
+      Boolean(state.purchaseStoreModalStore) ||
+      Boolean(state.purchaseActionItemId)
+  );
   bindEvents();
   syncSegmentedUi();
   focusStoreInputIfNeeded();
@@ -851,6 +1058,10 @@ function setupGlobalErrorHandlers() {
     }
     if (state.purchaseStoreModalStore) {
       closeStoreModal();
+      return;
+    }
+    if (state.purchaseActionItemId) {
+      closePurchaseActionModal();
       return;
     }
     if (state.purchaseEditOpen && !state.purchaseSaving) {

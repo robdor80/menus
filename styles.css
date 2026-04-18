@@ -1101,6 +1101,87 @@ body.modal-open {
   cursor: pointer;
 }
 
+.purchase-action-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 170;
+  background: rgba(10, 22, 16, 0.56);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.purchase-action-modal {
+  width: 100%;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 20px 45px rgba(10, 25, 16, 0.28);
+  padding: 0.72rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.purchase-action-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.purchase-action-header h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.purchase-action-header button {
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  background: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.purchase-action-form {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.purchase-action-form label {
+  color: var(--text-soft);
+  font-size: 0.86rem;
+}
+
+.purchase-action-buttons {
+  display: grid;
+  gap: 0.46rem;
+  margin-top: 0.2rem;
+}
+
+.purchase-action-buttons button {
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  cursor: pointer;
+}
+
+.purchase-action-buttons .primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.purchase-action-buttons .danger,
+.history-actions .danger {
+  border-color: #efc9c4;
+  color: #9d2e21;
+}
+
 .history-card {
   background: #fff;
   border: 1px solid var(--border-soft);
@@ -1158,6 +1239,9 @@ body.modal-open {
 .history-store h4 {
   margin: 0 0 0.34rem;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .history-store ul {
@@ -1293,6 +1377,16 @@ body.modal-open {
   .store-editor-shell {
     width: min(760px, 100%);
     max-height: min(90dvh, 840px);
+    border-radius: 18px;
+  }
+
+  .purchase-action-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .purchase-action-modal {
+    width: min(560px, 100%);
     border-radius: 18px;
   }
 

@@ -1,5 +1,5 @@
 import { escapeHtml } from "./normalize.js";
-import { STORE_ICONS } from "./purchase-utils.js";
+import { getStoreIconMeta } from "./purchase-utils.js";
 
 function formatHistoryDate(value) {
   if (!value) {
@@ -18,6 +18,20 @@ function formatHistoryDate(value) {
   }).format(date);
 }
 
+function renderStoreIcon(store, className = "store-icon-mini") {
+  const icon = getStoreIconMeta(store);
+  const hasImage = Boolean(icon.url);
+  const imageHtml = hasImage
+    ? `<img class="${className}__img" src="${escapeHtml(icon.url)}" alt="${escapeHtml(store)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.hidden=false;" />`
+    : "";
+  return `
+    <span class="${className}">
+      ${imageHtml}
+      <span class="${className}__fallback" aria-hidden="true" ${hasImage ? "hidden" : ""}>${escapeHtml(icon.emoji)}</span>
+    </span>
+  `;
+}
+
 function renderStoreDetails(entry) {
   return entry.storesOrder
     .filter((store) => (entry.itemsByStore[store] || []).length > 0)
@@ -25,13 +39,13 @@ function renderStoreDetails(entry) {
       const items = entry.itemsByStore[store] || [];
       return `
         <section class="history-store">
-          <h4>${escapeHtml(STORE_ICONS[store] || "\uD83E\uDDFE")} ${escapeHtml(store)}</h4>
+          <h4>${renderStoreIcon(store)} ${escapeHtml(store)}</h4>
           <ul>
             ${items
               .map(
                 (item) => `
                   <li class="${item.checked ? "is-checked" : ""}">
-                    <span class="dot">${item.checked ? "&#10003;" : "•"}</span>
+                    <span class="dot">${item.checked ? "&#10003;" : "&bull;"}</span>
                     <span>${escapeHtml(item.text)}</span>
                   </li>
                 `
@@ -76,12 +90,13 @@ export function renderHistorySection(state, historyEntries) {
                 <header class="history-card-head">
                   <div>
                     <h3>${formatHistoryDate(entry.createdAt)}</h3>
-                    <p>${entry.stats.storesCount} supermercados · ${entry.stats.itemsTotal} items</p>
-                    <p>${entry.stats.checkedCount} comprados · ${entry.stats.pendingCount} pendientes</p>
+                    <p>${entry.stats.storesCount} supermercados &middot; ${entry.stats.itemsTotal} items</p>
+                    <p>${entry.stats.checkedCount} comprados &middot; ${entry.stats.pendingCount} pendientes</p>
                   </div>
                   <div class="history-actions">
                     <button type="button" data-toggle-history="${escapeHtml(entry.id)}">${expanded ? "Ocultar" : "Ver detalle"}</button>
                     <button type="button" class="primary" data-restore-history="${escapeHtml(entry.id)}">Restaurar compra</button>
+                    <button type="button" class="danger" data-delete-history="${escapeHtml(entry.id)}">Eliminar entrada</button>
                   </div>
                 </header>
                 ${expanded ? `<section class="history-details">${renderStoreDetails(entry)}</section>` : ""}
@@ -93,3 +108,4 @@ export function renderHistorySection(state, historyEntries) {
     </section>
   `;
 }
+

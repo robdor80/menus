@@ -134,3 +134,15 @@ export async function restoreHistoryToActive(firestoreClient, historyEntry) {
   const saved = await saveActivePurchase(firestoreClient, purchase);
   return saved;
 }
+
+export async function deleteHistoryEntry(firestoreClient, historyId) {
+  if (!historyId) {
+    return;
+  }
+
+  if (!firestoreClient.status.ready) {
+    return;
+  }
+
+  await firestoreClient.deleteDocument(HISTORY_COLLECTION, historyId);
+}

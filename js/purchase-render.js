@@ -46,6 +46,64 @@ function renderPurchaseStoreCard(store, items) {
   `;
 }
 
+function findItemById(purchaseData, itemId) {
+  for (const store of purchaseData.storesOrder) {
+    const item = (purchaseData.itemsByStore[store] || []).find((value) => value.id === itemId);
+    if (item) {
+      return item;
+    }
+  }
+  return null;
+}
+
+function renderPurchaseActionModal(state, purchaseData) {
+  const itemId = state.purchaseActionItemId;
+  if (!itemId) {
+    return "";
+  }
+
+  const item = findItemById(purchaseData, itemId);
+  if (!item) {
+    return "";
+  }
+
+  const stores = Array.from(new Set([...purchaseData.storesOrder, item.store, state.purchaseActionStore || item.store]));
+  const selectedStore = state.purchaseActionStore || item.store;
+
+  return `
+    <section class="purchase-action-overlay" role="dialog" aria-modal="true" aria-label="Gestionar producto">
+      <div class="purchase-action-modal">
+        <header class="purchase-action-header">
+          <h3>Gestionar producto</h3>
+          <button type="button" data-close-purchase-action aria-label="Cerrar">&times;</button>
+        </header>
+        <form id="purchase-action-form" class="purchase-action-form">
+          <label for="purchase_action_text">Producto</label>
+          <input
+            id="purchase_action_text"
+            name="text"
+            type="text"
+            value="${escapeHtml(state.purchaseActionText || item.text)}"
+          />
+          <label for="purchase_action_store">Supermercado</label>
+          <select id="purchase_action_store" name="store">
+            ${stores
+              .map(
+                (store) =>
+                  `<option value="${escapeHtml(store)}" ${store === selectedStore ? "selected" : ""}>${escapeHtml(store)}</option>`
+              )
+              .join("")}
+          </select>
+          <div class="purchase-action-buttons">
+            <button type="submit" class="primary" ${state.purchaseSaving ? "disabled" : ""}>Guardar cambios</button>
+            <button type="button" class="danger" data-delete-purchase-action ${state.purchaseSaving ? "disabled" : ""}>Eliminar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  `;
+}
+
 function renderPurchaseEditor(state, purchaseData) {
   if (!state.purchaseEditOpen) {
     return "";
@@ -197,6 +255,7 @@ export function renderPurchaseSection(state, purchaseData) {
       <header class="purchase-header">
         <h2>Compra semanal</h2>
         <p>${stats.itemsTotal} productos &middot; ${stats.checkedCount} comprados &middot; ${stats.pendingCount} pendientes</p>
+        <p class="purchase-empty-line">Mant\u00e9n pulsado un producto para editar, mover o eliminar.</p>
         <div class="purchase-toolbar">
           <button type="button" data-open-purchase-editor>Editar compra</button>
           <button type="button" class="primary" data-finish-purchase ${state.purchaseSaving ? "disabled" : ""}>Compra finalizada</button>
@@ -206,6 +265,8 @@ export function renderPurchaseSection(state, purchaseData) {
       <section class="purchase-grid">${cards}</section>
     </section>
     ${renderPurchaseEditor(state, purchaseData)}
+    ${renderPurchaseActionModal(state, purchaseData)}
   `;
 }
+
 
