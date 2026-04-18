@@ -1,8 +1,17 @@
 import { escapeHtml } from "./normalize.js";
-import { getStats, STORE_ICONS } from "./purchase-utils.js";
+import { getStats, getStoreIconMeta } from "./purchase-utils.js";
 
-function iconForStore(store) {
-  return STORE_ICONS[store] || "🧾";
+function renderStoreIcon(store, className = "store-icon") {
+  const icon = getStoreIconMeta(store);
+  const imageHtml = icon.url
+    ? `<img class="${className}__img" src="${escapeHtml(icon.url)}" alt="${escapeHtml(store)}" loading="lazy" referrerpolicy="no-referrer" />`
+    : "";
+  return `
+    <span class="${className}">
+      ${imageHtml}
+      <span class="${className}__fallback" aria-hidden="true">${escapeHtml(icon.emoji)}</span>
+    </span>
+  `;
 }
 
 function renderPurchaseStoreCard(store, items) {
@@ -18,7 +27,7 @@ function renderPurchaseStoreCard(store, items) {
                 data-toggle-purchase-item="${escapeHtml(item.id)}"
                 aria-pressed="${item.checked ? "true" : "false"}"
               >
-                <span class="purchase-item-check">${item.checked ? "✓" : ""}</span>
+                <span class="purchase-item-check">${item.checked ? "&#10003;" : ""}</span>
                 <span class="purchase-item-text">${escapeHtml(item.text)}</span>
               </button>
             `
@@ -28,7 +37,7 @@ function renderPurchaseStoreCard(store, items) {
   return `
     <article class="purchase-store-card">
       <header class="purchase-store-head">
-        <h3>${iconForStore(store)} ${escapeHtml(store)}</h3>
+        <h3>${renderStoreIcon(store, "store-icon-mini")} ${escapeHtml(store)}</h3>
         <span>${items.length}</span>
       </header>
       <div class="purchase-store-items">${itemsHtml}</div>
@@ -36,132 +45,120 @@ function renderPurchaseStoreCard(store, items) {
   `;
 }
 
-function renderDraftStoreItems(store, items) {
-  return `
-    <section class="purchase-draft-store">
-      <header>
-        <h4>${iconForStore(store)} ${escapeHtml(store)}</h4>
-        <span>${items.length}</span>
-      </header>
-      ${
-        items.length === 0
-          ? '<p class="purchase-empty-line">Sin productos</p>'
-          : `
-            <ul>
-              ${items
-                .map(
-                  (item) => `
-                    <li>
-                      <button
-                        type="button"
-                        class="purchase-draft-item"
-                        data-edit-item-id="${escapeHtml(item.id)}"
-                        title="Manten pulsado para editar, mover o eliminar"
-                      >
-                        <span class="purchase-draft-dot ${item.checked ? "is-checked" : ""}"></span>
-                        <span>${escapeHtml(item.text)}</span>
-                      </button>
-                    </li>
-                  `
-                )
-                .join("")}
-            </ul>
-          `
-      }
-    </section>
-  `;
-}
-
-function renderStoresDatalist(stores) {
-  return `
-    <datalist id="purchase-store-options">
-      ${stores.map((store) => `<option value="${escapeHtml(store)}"></option>`).join("")}
-    </datalist>
-  `;
-}
-
-function renderPurchaseEditorModal(state) {
-  if (!state.purchaseEditOpen || !state.purchaseDraft) {
+function renderPurchaseEditor(state, purchaseData) {
+  if (!state.purchaseEditOpen) {
     return "";
   }
 
-  const stores = state.purchaseDraft.storesOrder;
-  const draftList = stores
-    .map((store) => renderDraftStoreItems(store, state.purchaseDraft.itemsByStore[store] || []))
+  const gridItems = purchaseData.storesOrder
+    .map((store) => {
+      const count = (purchaseData.itemsByStore[store] || []).length;
+      return `
+        <button
+          type="button"
+          class="store-pick-card"
+          data-open-store-editor="${escapeHtml(store)}"
+        >
+          <span class="store-pick-icon-wrap">${renderStoreIcon(store, "store-icon-big")}</span>
+          <span class="store-pick-name">${escapeHtml(store)}</span>
+          <span class="store-pick-count">${count} productos</span>
+        </button>
+      `;
+    })
     .join("");
-
-  const actionItem = state.purchaseActionItemId
-    ? Object.values(state.purchaseDraft.itemsByStore)
-        .flat()
-        .find((item) => item.id === state.purchaseActionItemId)
-    : null;
-
-  const actionModal =
-    state.purchaseActionItemId && actionItem
-      ? `
-        <section class="purchase-action-overlay" role="dialog" aria-modal="true" aria-label="Acciones del producto">
-          <div class="purchase-action-modal">
-            <h4>Editar producto</h4>
-            <p>${escapeHtml(actionItem.text)}</p>
-
-            <label for="purchase_action_text">Texto</label>
-            <input id="purchase_action_text" name="purchase_action_text" type="text" value="${escapeHtml(state.purchaseActionText || actionItem.text)}" />
-
-            <label for="purchase_action_store">Mover a</label>
-            <input
-              id="purchase_action_store"
-              name="purchase_action_store"
-              type="text"
-              list="purchase-store-options"
-              value="${escapeHtml(state.purchaseActionStore || actionItem.store)}"
-            />
-
-            <div class="purchase-action-buttons">
-              <button type="button" data-purchase-action="save-text">Guardar texto</button>
-              <button type="button" data-purchase-action="move-item">Mover</button>
-              <button type="button" class="danger" data-purchase-action="delete-item">Eliminar</button>
-              <button type="button" data-purchase-action="close">Cancelar</button>
-            </div>
-          </div>
-        </section>
-      `
-      : "";
 
   return `
     <section class="purchase-editor-overlay" role="dialog" aria-modal="true" aria-label="Editar compra">
       <div class="purchase-editor-shell">
         <header class="purchase-editor-header">
           <h2>Editar compra</h2>
-          <button type="button" data-close-purchase-editor aria-label="Cerrar editor">×</button>
+          <button type="button" data-close-purchase-editor aria-label="Cerrar editor">&times;</button>
         </header>
         <div class="purchase-editor-content">
-          <section class="purchase-editor-layout">
-            <section class="purchase-editor-add">
-              <h3>Añadir producto</h3>
-              <form id="purchase-add-form">
-                <label for="purchase_store_select">Supermercado</label>
-                <input id="purchase_store_select" name="store" type="text" list="purchase-store-options" value="${escapeHtml(stores[0] || "Otros")}" />
-                <label for="purchase_item_text">Producto</label>
-                <input id="purchase_item_text" name="text" type="text" placeholder="Ej: Tomate triturado" />
-                <button type="submit">Añadir</button>
-              </form>
-              ${renderStoresDatalist(stores)}
-              <p class="purchase-hint">En esta pantalla: manten pulsado un item para editar, mover o eliminar.</p>
-            </section>
-
-            <section class="purchase-editor-list">
-              ${draftList}
-            </section>
+          <p class="purchase-editor-subtitle">Selecciona supermercado para a\u00f1adir o editar productos.</p>
+          <section class="store-pick-grid">
+            ${gridItems}
           </section>
         </div>
-        <footer class="purchase-editor-footer">
-          <button type="button" data-close-purchase-editor>Cancelar</button>
-          <button type="button" class="primary" data-save-purchase-editor ${state.purchaseSaving ? "disabled" : ""}>
-            ${state.purchaseSaving ? "Guardando..." : "Guardar"}
-          </button>
+      </div>
+      ${renderStoreModal(state, purchaseData)}
+    </section>
+  `;
+}
+
+function renderStoreModal(state, purchaseData) {
+  const store = state.purchaseStoreModalStore;
+  if (!store) {
+    return "";
+  }
+
+  const items = purchaseData.itemsByStore[store] || [];
+  const isEditing = Boolean(state.purchaseStoreEditingItemId);
+  const submitLabel = isEditing ? "Guardar cambio" : "A\u00f1adir";
+
+  return `
+    <section class="store-editor-overlay" role="dialog" aria-modal="true" aria-label="Editar ${escapeHtml(store)}">
+      <div class="store-editor-shell">
+        <header class="store-editor-header">
+          <h3>${renderStoreIcon(store, "store-icon-mini")} ${escapeHtml(store)}</h3>
+          <button type="button" data-close-store-editor aria-label="Cerrar supermercado">&times;</button>
+        </header>
+
+        <div class="store-editor-body">
+          <form id="store-item-form" class="store-item-form">
+            <label for="store_item_text">Producto</label>
+            <div class="store-item-input-row">
+              <input
+                id="store_item_text"
+                name="text"
+                type="text"
+                value="${escapeHtml(state.purchaseStoreInputText || "")}" 
+                placeholder="Ej: leche, pan, tomate..."
+              />
+              <button type="submit" ${state.purchaseSaving ? "disabled" : ""}>${submitLabel}</button>
+            </div>
+          </form>
+
+          ${
+            isEditing
+              ? `
+                <div class="store-editing-banner">
+                  <span>Editando producto</span>
+                  <button type="button" data-cancel-store-item-edit>Cancelar edici\u00f3n</button>
+                </div>
+              `
+              : ""
+          }
+
+          <section class="store-items-list">
+            ${
+              items.length === 0
+                ? '<p class="purchase-empty-line">Sin productos en este supermercado</p>'
+                : `
+                    <ul>
+                      ${items
+                        .map(
+                          (item) => `
+                            <li>
+                              <span class="store-item-text ${item.checked ? "is-checked" : ""}">${escapeHtml(item.text)}</span>
+                              <div class="store-item-actions">
+                                <button type="button" data-store-item-edit="${escapeHtml(item.id)}">Editar</button>
+                                <button type="button" class="danger" data-store-item-delete="${escapeHtml(item.id)}">Borrar</button>
+                              </div>
+                            </li>
+                          `
+                        )
+                        .join("")}
+                    </ul>
+                  `
+            }
+          </section>
+        </div>
+
+        <footer class="store-editor-footer">
+          <button type="button" class="primary" data-close-store-editor>Finalizar</button>
         </footer>
       </div>
-      ${actionModal}
     </section>
   `;
 }
@@ -172,23 +169,18 @@ export function renderPurchaseSection(state, purchaseData) {
   }
 
   const stats = getStats(purchaseData);
-  const storesToRender = purchaseData.storesOrder.filter((store) => {
-    const items = purchaseData.itemsByStore[store] || [];
-    return items.length > 0;
-  });
+  const storesToRender = purchaseData.storesOrder.filter((store) => (purchaseData.itemsByStore[store] || []).length > 0);
 
   const cards =
     storesToRender.length === 0
       ? '<section class="purchase-empty-main"><p>No hay productos en la compra activa.</p></section>'
-      : storesToRender
-          .map((store) => renderPurchaseStoreCard(store, purchaseData.itemsByStore[store] || []))
-          .join("");
+      : storesToRender.map((store) => renderPurchaseStoreCard(store, purchaseData.itemsByStore[store] || [])).join("");
 
   const allChecked = stats.itemsTotal > 0 && stats.pendingCount === 0;
   const suggestion = allChecked
     ? `
       <section class="purchase-finish-hint">
-        <p>Todo esta marcado como comprado.</p>
+        <p>Todo est\u00e1 marcado como comprado.</p>
         <button type="button" data-finish-purchase ${state.purchaseSaving ? "disabled" : ""}>Finalizar compra</button>
       </section>
     `
@@ -198,7 +190,7 @@ export function renderPurchaseSection(state, purchaseData) {
     <section class="purchase-section">
       <header class="purchase-header">
         <h2>Compra semanal</h2>
-        <p>${stats.itemsTotal} items · ${stats.checkedCount} comprados · ${stats.pendingCount} pendientes</p>
+        <p>${stats.itemsTotal} productos · ${stats.checkedCount} comprados · ${stats.pendingCount} pendientes</p>
         <div class="purchase-toolbar">
           <button type="button" data-open-purchase-editor>Editar compra</button>
           <button type="button" class="primary" data-finish-purchase ${state.purchaseSaving ? "disabled" : ""}>Compra finalizada</button>
@@ -207,6 +199,6 @@ export function renderPurchaseSection(state, purchaseData) {
       ${suggestion}
       <section class="purchase-grid">${cards}</section>
     </section>
-    ${renderPurchaseEditorModal(state)}
+    ${renderPurchaseEditor(state, purchaseData)}
   `;
 }

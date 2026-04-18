@@ -25,13 +25,13 @@ function renderStoreDetails(entry) {
       const items = entry.itemsByStore[store] || [];
       return `
         <section class="history-store">
-          <h4>${STORE_ICONS[store] || "🧾"} ${escapeHtml(store)}</h4>
+          <h4>${escapeHtml(STORE_ICONS[store] || "\uD83E\uDDFE")} ${escapeHtml(store)}</h4>
           <ul>
             ${items
               .map(
                 (item) => `
                   <li class="${item.checked ? "is-checked" : ""}">
-                    <span class="dot">${item.checked ? "✓" : "•"}</span>
+                    <span class="dot">${item.checked ? "&#10003;" : "•"}</span>
                     <span>${escapeHtml(item.text)}</span>
                   </li>
                 `

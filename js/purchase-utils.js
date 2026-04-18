@@ -10,15 +10,39 @@ export const DEFAULT_STORES = [
 ];
 
 export const STORE_ICONS = {
-  Mercadona: "🛒",
-  Lidl: "🛍️",
-  Froiz: "🧺",
-  Gadis: "🏪",
-  Alcampo: "🏬",
-  Carrefour: "🛍️",
-  Erosky: "🛒",
-  Otros: "📌"
+  Mercadona: "\uD83D\uDED2",
+  Lidl: "\uD83D\uDED2",
+  Froiz: "\uD83C\uDFEA",
+  Gadis: "\uD83C\uDFEA",
+  Alcampo: "\uD83C\uDFEC",
+  Carrefour: "\uD83D\uDED2",
+  Erosky: "\uD83D\uDED2",
+  Otros: "\uD83D\uDCCC"
 };
+
+export const STORE_ICON_URLS = {
+  Mercadona:
+    "https://www.plazamayor.es/wp-content/uploads/sites/35/2019/05/6382c008-c63c-4305-b05e-ab45d1a7d6be.mercadona.png",
+  Lidl:
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/250px-Lidl-Logo.svg.png",
+  Carrefour:
+    "https://upload.wikimedia.org/wikipedia/en/6/65/Carrefour_Groupe.svg",
+  Gadis:
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Favicon_gadis.svg/250px-Favicon_gadis.svg.png",
+  Froiz:
+    "https://media.licdn.com/dms/image/v2/D4D0BAQGAziguLS36Zg/company-logo_200_200/B4DZX6n.udH4AM-/0/1743666539779/distribucionesfroiz_logo?e=2147483647&v=beta&t=pIy1f9MwL3wNsRhat576-4utVskmRtKPUDRH8AWSHMg",
+  Erosky:
+    "https://upload.wikimedia.org/wikipedia/en/thumb/e/e5/Eroski.svg/1280px-Eroski.svg.png",
+  Alcampo:
+    "https://www.lenciclopedia.org/w/thumb.php?f=Lalcampo.jpg&width=240"
+};
+
+export function getStoreIconMeta(store) {
+  return {
+    emoji: STORE_ICONS[store] || "\uD83E\uDDFE",
+    url: STORE_ICON_URLS[store] || ""
+  };
+}
 
 function safeText(value) {
   if (typeof value !== "string") {
@@ -259,3 +283,4 @@ export function buildHistoryRecord(purchase) {
     stats: getStats(normalized)
   };
 }
+

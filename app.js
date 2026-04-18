@@ -15,13 +15,11 @@ import { getShiftSettings } from "./js/shift-engine.js";
 import { buildEmptyWeek, loadWeek, saveDay } from "./js/week-service.js";
 import {
   addItem,
-  clonePurchase,
   createEmptyPurchase,
   deleteItem,
   getItemById,
   getStats,
   isPurchaseEmpty,
-  moveItem,
   toggleItemChecked,
   updateItemText
 } from "./js/purchase-utils.js";
@@ -43,6 +41,7 @@ let toastTimerId = null;
 
 const state = {
   activeSection: "menu",
+
   editorOpen: false,
   loading: false,
   saving: false,
@@ -61,10 +60,9 @@ const state = {
   purchaseSaving: false,
   purchaseData: createEmptyPurchase(),
   purchaseEditOpen: false,
-  purchaseDraft: null,
-  purchaseActionItemId: "",
-  purchaseActionText: "",
-  purchaseActionStore: "",
+  purchaseStoreModalStore: "",
+  purchaseStoreInputText: "",
+  purchaseStoreEditingItemId: "",
 
   historyLoaded: false,
   historyLoading: false,
@@ -85,7 +83,7 @@ function showToast(message) {
   toastTimerId = window.setTimeout(() => {
     state.toastMessage = "";
     render();
-  }, 1900);
+  }, 1800);
 }
 
 function currentWeekDates() {
@@ -266,22 +264,12 @@ async function onSaveDay(form) {
   }
 }
 
-function closePurchaseActionModal() {
-  setState({
-    purchaseActionItemId: "",
-    purchaseActionText: "",
-    purchaseActionStore: ""
-  });
-}
-
 function openPurchaseEditor() {
-  const draft = clonePurchase(state.purchaseData);
   setState({
     purchaseEditOpen: true,
-    purchaseDraft: draft,
-    purchaseActionItemId: "",
-    purchaseActionText: "",
-    purchaseActionStore: "",
+    purchaseStoreModalStore: "",
+    purchaseStoreInputText: "",
+    purchaseStoreEditingItemId: "",
     errorMessage: ""
   });
 }
@@ -292,141 +280,121 @@ function closePurchaseEditor() {
   }
   setState({
     purchaseEditOpen: false,
-    purchaseDraft: null,
-    purchaseActionItemId: "",
-    purchaseActionText: "",
-    purchaseActionStore: "",
-    errorMessage: ""
+    purchaseStoreModalStore: "",
+    purchaseStoreInputText: "",
+    purchaseStoreEditingItemId: ""
   });
 }
 
-async function onTogglePurchaseItem(itemId) {
-  const previous = state.purchaseData;
-  const next = toggleItemChecked(previous, itemId);
-  if (next === previous) {
+function openStoreModal(store) {
+  if (!store) {
     return;
   }
-
   setState({
-    purchaseData: next,
-    errorMessage: ""
+    purchaseStoreModalStore: store,
+    purchaseStoreInputText: "",
+    purchaseStoreEditingItemId: ""
   });
-
-  try {
-    const persisted = await saveActivePurchase(firestoreClient, next);
-    setState({ purchaseData: persisted });
-  } catch (error) {
-    setState({
-      purchaseData: previous,
-      errorMessage: error instanceof Error ? error.message : "No se pudo actualizar el estado del item."
-    });
-  }
 }
 
-async function onSavePurchaseEditor() {
-  if (!state.purchaseDraft) {
+function closeStoreModal() {
+  setState({
+    purchaseStoreModalStore: "",
+    purchaseStoreInputText: "",
+    purchaseStoreEditingItemId: ""
+  });
+}
+
+function startStoreItemEdit(itemId) {
+  if (!itemId || !state.purchaseStoreModalStore) {
+    return;
+  }
+  const item = getItemById(state.purchaseData, itemId);
+  if (!item) {
+    return;
+  }
+  setState({
+    purchaseStoreEditingItemId: item.id,
+    purchaseStoreInputText: item.text
+  });
+}
+
+function cancelStoreItemEdit() {
+  setState({
+    purchaseStoreEditingItemId: "",
+    purchaseStoreInputText: ""
+  });
+}
+
+async function persistPurchaseChange(nextPurchase, successMessage) {
+  const previous = state.purchaseData;
+  if (nextPurchase === previous) {
     return;
   }
 
   setState({
     purchaseSaving: true,
+    purchaseData: nextPurchase,
     errorMessage: ""
   });
 
   try {
-    const saved = await saveActivePurchase(firestoreClient, state.purchaseDraft);
+    const saved = await saveActivePurchase(firestoreClient, nextPurchase);
     setState({
       purchaseSaving: false,
-      purchaseData: saved,
-      purchaseEditOpen: false,
-      purchaseDraft: null,
-      purchaseActionItemId: "",
-      purchaseActionText: "",
-      purchaseActionStore: ""
+      purchaseData: saved
     });
-    showToast("Compra guardada");
+    if (successMessage) {
+      showToast(successMessage);
+    }
   } catch (error) {
     setState({
       purchaseSaving: false,
+      purchaseData: previous,
       errorMessage: error instanceof Error ? error.message : "No se pudo guardar la compra."
     });
   }
 }
 
-function openPurchaseItemActions(itemId) {
-  if (!state.purchaseEditOpen || !state.purchaseDraft) {
+async function onTogglePurchaseItem(itemId) {
+  const next = toggleItemChecked(state.purchaseData, itemId);
+  await persistPurchaseChange(next, "");
+}
+
+async function onSubmitStoreItem(formData) {
+  const store = state.purchaseStoreModalStore;
+  if (!store) {
     return;
   }
 
-  const item = getItemById(state.purchaseDraft, itemId);
-  if (!item) {
+  const text = cleanText(formData.get("text"));
+  if (!text) {
     return;
   }
+
+  const editingId = state.purchaseStoreEditingItemId;
+  const next = editingId
+    ? updateItemText(state.purchaseData, editingId, text)
+    : addItem(state.purchaseData, { storeName: store, text });
+
+  await persistPurchaseChange(next, editingId ? "Producto actualizado" : "Producto a\u00f1adido");
 
   setState({
-    purchaseActionItemId: item.id,
-    purchaseActionText: item.text,
-    purchaseActionStore: item.store
+    purchaseStoreEditingItemId: "",
+    purchaseStoreInputText: ""
   });
 }
 
-function bindPurchaseLongPress() {
-  document.querySelectorAll("[data-edit-item-id]").forEach((button) => {
-    let timerId = null;
-    let startX = 0;
-    let startY = 0;
-    let longPressed = false;
-    const itemId = button.getAttribute("data-edit-item-id");
-    if (!itemId) {
-      return;
-    }
-
-    const clear = () => {
-      if (timerId) {
-        clearTimeout(timerId);
-        timerId = null;
-      }
-    };
-
-    button.addEventListener("pointerdown", (event) => {
-      if (event.pointerType === "mouse" && event.button !== 0) {
-        return;
-      }
-      longPressed = false;
-      startX = event.clientX;
-      startY = event.clientY;
-      clear();
-      timerId = window.setTimeout(() => {
-        longPressed = true;
-        openPurchaseItemActions(itemId);
-      }, 460);
-    });
-
-    button.addEventListener("pointermove", (event) => {
-      if (!timerId) {
-        return;
-      }
-      if (Math.abs(event.clientX - startX) > 8 || Math.abs(event.clientY - startY) > 8) {
-        clear();
-      }
-    });
-
-    button.addEventListener("pointerup", clear);
-    button.addEventListener("pointerleave", clear);
-    button.addEventListener("pointercancel", clear);
-
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (longPressed) {
-        event.stopPropagation();
-      }
-    });
-
-    button.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-      openPurchaseItemActions(itemId);
-    });
-  });
+async function onDeleteStoreItem(itemId) {
+  const confirmDelete = window.confirm("Eliminar este producto?");
+  if (!confirmDelete) {
+    return;
+  }
+  const next = deleteItem(state.purchaseData, itemId);
+  await persistPurchaseChange(next, "Producto eliminado");
+  if (state.purchaseStoreEditingItemId === itemId) {
+    cancelStoreItemEdit();
+  }
 }
 
 async function onFinishPurchase() {
@@ -438,13 +406,13 @@ async function onFinishPurchase() {
 
   if (stats.pendingCount > 0) {
     const confirmPending = window.confirm(
-      `Quedan ${stats.pendingCount} productos sin comprar. ¿Finalizar compra igualmente?`
+      `Quedan ${stats.pendingCount} productos sin comprar. Finalizar compra igualmente?`
     );
     if (!confirmPending) {
       return;
     }
   } else {
-    const confirmDone = window.confirm("¿Finalizar compra?");
+    const confirmDone = window.confirm("Finalizar compra?");
     if (!confirmDone) {
       return;
     }
@@ -465,10 +433,9 @@ async function onFinishPurchase() {
       purchaseSaving: false,
       purchaseData: result.nextActivePurchase,
       purchaseEditOpen: false,
-      purchaseDraft: null,
-      purchaseActionItemId: "",
-      purchaseActionText: "",
-      purchaseActionStore: "",
+      purchaseStoreModalStore: "",
+      purchaseStoreInputText: "",
+      purchaseStoreEditingItemId: "",
       historyEntries: nextHistory,
       historyLoaded: true,
       historyExpandedIds: []
@@ -490,7 +457,7 @@ async function onRestoreHistoryEntry(historyId) {
 
   if (!isPurchaseEmpty(state.purchaseData)) {
     const confirmReplace = window.confirm(
-      "La compra activa no está vacía. ¿Quieres reemplazarla con la compra histórica?"
+      "La compra activa no est\u00e1 vac\u00eda. \u00bfQuieres reemplazarla con la compra hist\u00f3rica?"
     );
     if (!confirmReplace) {
       return;
@@ -510,10 +477,9 @@ async function onRestoreHistoryEntry(historyId) {
       purchaseLoaded: true,
       activeSection: "purchase",
       purchaseEditOpen: false,
-      purchaseDraft: null,
-      purchaseActionItemId: "",
-      purchaseActionText: "",
-      purchaseActionStore: ""
+      purchaseStoreModalStore: "",
+      purchaseStoreInputText: "",
+      purchaseStoreEditingItemId: ""
     });
     showToast("Compra restaurada");
   } catch (error) {
@@ -533,10 +499,9 @@ async function onSectionChange(section) {
     activeSection: section,
     editorOpen: false,
     purchaseEditOpen: false,
-    purchaseDraft: null,
-    purchaseActionItemId: "",
-    purchaseActionText: "",
-    purchaseActionStore: "",
+    purchaseStoreModalStore: "",
+    purchaseStoreInputText: "",
+    purchaseStoreEditingItemId: "",
     infoMessage: "",
     errorMessage: ""
   });
@@ -544,11 +509,9 @@ async function onSectionChange(section) {
   if (section === "menu") {
     await ensureWeekLoaded();
   }
-
   if (section === "purchase") {
     await ensurePurchaseLoaded();
   }
-
   if (section === "history") {
     await ensureHistoryLoaded();
   }
@@ -665,92 +628,62 @@ function bindEvents() {
     });
   });
 
-  document.querySelector("[data-save-purchase-editor]")?.addEventListener("click", () => {
-    void onSavePurchaseEditor();
+  document.querySelector(".purchase-editor-overlay")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) {
+      closePurchaseEditor();
+    }
   });
 
-  const addForm = document.querySelector("#purchase-add-form");
-  if (addForm) {
-    addForm.addEventListener("submit", (event) => {
+  document.querySelectorAll("[data-open-store-editor]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const store = button.getAttribute("data-open-store-editor");
+      openStoreModal(store);
+    });
+  });
+
+  document.querySelectorAll("[data-close-store-editor]").forEach((button) => {
+    button.addEventListener("click", () => {
+      closeStoreModal();
+    });
+  });
+
+  document.querySelector(".store-editor-overlay")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) {
+      closeStoreModal();
+    }
+  });
+
+  const storeForm = document.querySelector("#store-item-form");
+  if (storeForm) {
+    storeForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      if (!state.purchaseDraft) {
-        return;
-      }
-
-      const formData = new FormData(addForm);
-      const store = cleanText(formData.get("store")) || "Otros";
-      const text = cleanText(formData.get("text"));
-      if (!text) {
-        return;
-      }
-
-      const nextDraft = addItem(state.purchaseDraft, {
-        storeName: store,
-        text
-      });
-      setState({
-        purchaseDraft: nextDraft
-      });
-
-      addForm.reset();
-      const storeInput = addForm.querySelector('[name="store"]');
-      if (storeInput) {
-        storeInput.value = store;
-      }
+      const formData = new FormData(storeForm);
+      void onSubmitStoreItem(formData);
     });
   }
 
-  bindPurchaseLongPress();
-
-  document.querySelectorAll("[data-purchase-action]").forEach((button) => {
+  document.querySelectorAll("[data-store-item-edit]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (!state.purchaseDraft || !state.purchaseActionItemId) {
-        closePurchaseActionModal();
+      const itemId = button.getAttribute("data-store-item-edit");
+      if (!itemId) {
         return;
       }
-
-      const action = button.getAttribute("data-purchase-action");
-      const itemId = state.purchaseActionItemId;
-      const textInput = document.querySelector("#purchase_action_text");
-      const storeInput = document.querySelector("#purchase_action_store");
-      const nextText = cleanText(textInput?.value || "");
-      const nextStore = cleanText(storeInput?.value || "") || "Otros";
-
-      if (action === "close") {
-        closePurchaseActionModal();
-        return;
-      }
-
-      if (action === "save-text") {
-        const nextDraft = updateItemText(state.purchaseDraft, itemId, nextText);
-        setState({
-          purchaseDraft: nextDraft,
-          purchaseActionText: nextText || state.purchaseActionText
-        });
-        return;
-      }
-
-      if (action === "move-item") {
-        const nextDraft = moveItem(state.purchaseDraft, itemId, nextStore);
-        setState({
-          purchaseDraft: nextDraft,
-          purchaseActionStore: nextStore
-        });
-        return;
-      }
-
-      if (action === "delete-item") {
-        const confirmDelete = window.confirm("¿Eliminar este producto de la lista?");
-        if (!confirmDelete) {
-          return;
-        }
-        const nextDraft = deleteItem(state.purchaseDraft, itemId);
-        setState({
-          purchaseDraft: nextDraft
-        });
-        closePurchaseActionModal();
-      }
+      startStoreItemEdit(itemId);
     });
+  });
+
+  document.querySelectorAll("[data-store-item-delete]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const itemId = button.getAttribute("data-store-item-delete");
+      if (!itemId) {
+        return;
+      }
+      void onDeleteStoreItem(itemId);
+    });
+  });
+
+  document.querySelector("[data-cancel-store-item-edit]")?.addEventListener("click", () => {
+    cancelStoreItemEdit();
   });
 
   document.querySelectorAll("[data-finish-purchase]").forEach((button) => {
@@ -816,13 +749,24 @@ function render() {
   });
 
   appRoot.innerHTML = html;
-  document.body.classList.toggle(
-    "modal-open",
-    state.editorOpen || state.purchaseEditOpen || Boolean(state.purchaseActionItemId)
-  );
+  document.body.classList.toggle("modal-open", state.editorOpen || state.purchaseEditOpen || Boolean(state.purchaseStoreModalStore));
   bindEvents();
   syncSegmentedUi();
+  focusStoreInputIfNeeded();
   maybeAutoScrollToTodayCard();
+}
+
+function focusStoreInputIfNeeded() {
+  if (!state.purchaseStoreModalStore) {
+    return;
+  }
+  const input = document.querySelector("#store_item_text");
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  input.focus();
+  const length = input.value.length;
+  input.setSelectionRange(length, length);
 }
 
 function maybeAutoScrollToTodayCard() {
@@ -879,20 +823,19 @@ function setupGlobalErrorHandlers() {
   });
 
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      if (state.purchaseActionItemId) {
-        closePurchaseActionModal();
-        return;
-      }
-
-      if (state.purchaseEditOpen && !state.purchaseSaving) {
-        closePurchaseEditor();
-        return;
-      }
-
-      if (state.editorOpen && !state.saving) {
-        setState({ editorOpen: false, errorMessage: "" });
-      }
+    if (event.key !== "Escape") {
+      return;
+    }
+    if (state.purchaseStoreModalStore) {
+      closeStoreModal();
+      return;
+    }
+    if (state.purchaseEditOpen && !state.purchaseSaving) {
+      closePurchaseEditor();
+      return;
+    }
+    if (state.editorOpen && !state.saving) {
+      setState({ editorOpen: false, errorMessage: "" });
     }
   });
 }
