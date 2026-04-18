@@ -76,6 +76,8 @@ export function createEmptyPurchase(stores = DEFAULT_STORES) {
 
   return {
     updatedAt: nowIso(),
+    restoredFromHistoryId: "",
+    restoredFromHistorySignature: "",
     storesOrder: uniqueStores,
     itemsByStore
   };
@@ -127,9 +129,25 @@ export function normalizePurchase(rawData) {
 
   return {
     updatedAt: safeText(rawData?.updatedAt) || nowIso(),
+    restoredFromHistoryId: safeText(rawData?.restoredFromHistoryId),
+    restoredFromHistorySignature: safeText(rawData?.restoredFromHistorySignature),
     storesOrder,
     itemsByStore
   };
+}
+
+export function buildPurchaseSignature(purchase) {
+  const normalized = normalizePurchase(purchase);
+  const compact = normalized.storesOrder.map((store) => ({
+    store,
+    items: (normalized.itemsByStore[store] || []).map((item) => ({
+      id: item.id,
+      text: item.text,
+      store: item.store,
+      checked: Boolean(item.checked)
+    }))
+  }));
+  return JSON.stringify(compact);
 }
 
 export function clonePurchase(purchase) {

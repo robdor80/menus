@@ -1,4 +1,5 @@
 import {
+  buildPurchaseSignature,
   buildHistoryRecord,
   createEmptyPurchase,
   normalizePurchase,
@@ -110,24 +111,43 @@ export async function loadHistory(firestoreClient, limitCount = 60) {
 }
 
 export async function finalizePurchase(firestoreClient, purchase) {
-  const historyRecord = buildHistoryRecord(purchase);
-  let historyId = `local_${Date.now()}`;
+  const normalized = normalizePurchase(purchase);
+  const currentSignature = buildPurchaseSignature(normalized);
+  const isRestoredWithoutChanges =
+    Boolean(normalized.restoredFromHistoryId) &&
+    Boolean(normalized.restoredFromHistorySignature) &&
+    normalized.restoredFromHistorySignature === currentSignature;
 
-  if (firestoreClient.status.ready) {
-    historyId = await firestoreClient.addDocument(HISTORY_COLLECTION, historyRecord);
+  const historyRecord = buildHistoryRecord(normalized);
+  let historyEntry = null;
+
+  if (!isRestoredWithoutChanges) {
+    let historyId = `local_${Date.now()}`;
+    if (firestoreClient.status.ready) {
+      historyId = await firestoreClient.addDocument(HISTORY_COLLECTION, historyRecord);
+    }
+    historyEntry = normalizeHistoryEntry({ ...historyRecord, id: historyId });
   }
 
   const empty = await clearActivePurchase(firestoreClient);
   return {
-    historyEntry: normalizeHistoryEntry({ ...historyRecord, id: historyId }),
-    nextActivePurchase: empty
+    historyEntry,
+    nextActivePurchase: empty,
+    skippedDuplicate: isRestoredWithoutChanges
   };
 }
 
 export async function restoreHistoryToActive(firestoreClient, historyEntry) {
-  const purchase = normalizePurchase({
+  const base = normalizePurchase({
     storesOrder: historyEntry?.storesOrder,
     itemsByStore: historyEntry?.itemsByStore,
+    updatedAt: nowIso()
+  });
+  const signature = buildPurchaseSignature(base);
+  const purchase = normalizePurchase({
+    ...base,
+    restoredFromHistoryId: historyEntry?.id || "",
+    restoredFromHistorySignature: signature,
     updatedAt: nowIso()
   });
 

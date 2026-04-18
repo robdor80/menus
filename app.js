@@ -527,7 +527,9 @@ async function onFinishPurchase() {
     const result = await finalizePurchase(firestoreClient, state.purchaseData);
     const nextHistory = firestoreClient.status.ready
       ? await loadHistory(firestoreClient)
-      : [result.historyEntry, ...state.historyEntries];
+      : result.historyEntry
+        ? [result.historyEntry, ...state.historyEntries]
+        : state.historyEntries;
 
     setState({
       purchaseSaving: false,
@@ -540,7 +542,7 @@ async function onFinishPurchase() {
       historyLoaded: true,
       historyExpandedIds: []
     });
-    showToast("Compra finalizada");
+    showToast(result.skippedDuplicate ? "Compra finalizada (sin duplicar historial)" : "Compra finalizada");
   } catch (error) {
     setState({
       purchaseSaving: false,
