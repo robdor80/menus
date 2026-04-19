@@ -74,7 +74,11 @@ const state = {
   historyLoaded: false,
   historyLoading: false,
   historyEntries: [],
-  historyExpandedIds: []
+  historyExpandedIds: [],
+
+  finishSummaryOpen: false,
+  finishSummaryTitle: "",
+  finishSummaryMessage: ""
 };
 
 function setState(patch) {
@@ -91,6 +95,14 @@ function showToast(message) {
     state.toastMessage = "";
     render();
   }, 1800);
+}
+
+function closeFinishSummary() {
+  setState({
+    finishSummaryOpen: false,
+    finishSummaryTitle: "",
+    finishSummaryMessage: ""
+  });
 }
 
 function currentWeekDates() {
@@ -504,9 +516,16 @@ async function onFinishPurchase() {
     return;
   }
 
-  if (stats.pendingCount > 0) {
+  if (stats.checkedCount === 0) {
+    const confirmNoneChecked = window.confirm(
+      "No hay productos marcados como comprados. Si finalizas, no se guardara nada en historial y la lista quedara igual. Quieres continuar?"
+    );
+    if (!confirmNoneChecked) {
+      return;
+    }
+  } else if (stats.pendingCount > 0) {
     const confirmPending = window.confirm(
-      `Quedan ${stats.pendingCount} productos sin comprar. Finalizar compra igualmente?`
+      `Se guardaran en historial solo los ${stats.checkedCount} productos marcados. Los ${stats.pendingCount} pendientes seguiran en la compra activa. Quieres finalizar?`
     );
     if (!confirmPending) {
       return;
@@ -531,6 +550,25 @@ async function onFinishPurchase() {
         ? [result.historyEntry, ...state.historyEntries]
         : state.historyEntries;
 
+    const passedToHistory = stats.checkedCount;
+    const keptPending = stats.pendingCount;
+
+    let summaryTitle = "Compra finalizada";
+    let summaryMessage = "";
+    if (result.skippedNoChecked) {
+      summaryTitle = "Sin cambios en historial";
+      summaryMessage = "No habia productos marcados como comprados, por eso no se guardo historial y la lista activa sigue igual.";
+    } else if (result.skippedDuplicate) {
+      summaryTitle = "Finalizada sin duplicar";
+      summaryMessage = keptPending > 0
+        ? `No se creo entrada duplicada en historial. Quedan ${keptPending} pendientes en la lista activa.`
+        : "No se creo entrada duplicada en historial.";
+    } else if (keptPending > 0) {
+      summaryMessage = `Pasaron ${passedToHistory} productos al historial y quedaron ${keptPending} pendientes en la lista activa.`;
+    } else {
+      summaryMessage = `Pasaron ${passedToHistory} productos al historial y la lista activa quedo vacia.`;
+    }
+
     setState({
       purchaseSaving: false,
       purchaseData: result.nextActivePurchase,
@@ -540,9 +578,11 @@ async function onFinishPurchase() {
       purchaseStoreEditingItemId: "",
       historyEntries: nextHistory,
       historyLoaded: true,
-      historyExpandedIds: []
+      historyExpandedIds: [],
+      finishSummaryOpen: true,
+      finishSummaryTitle: summaryTitle,
+      finishSummaryMessage: summaryMessage
     });
-    showToast(result.skippedDuplicate ? "Compra finalizada (sin duplicar historial)" : "Compra finalizada");
   } catch (error) {
     setState({
       purchaseSaving: false,
@@ -638,6 +678,9 @@ async function onSectionChange(section) {
     purchaseActionItemId: "",
     purchaseActionText: "",
     purchaseActionStore: "",
+    finishSummaryOpen: false,
+    finishSummaryTitle: "",
+    finishSummaryMessage: "",
     infoMessage: "",
     errorMessage: ""
   });
@@ -949,6 +992,18 @@ function bindEvents() {
       void onDeleteHistoryEntry(id);
     });
   });
+
+  document.querySelectorAll("[data-close-finish-summary]").forEach((button) => {
+    button.addEventListener("click", () => {
+      closeFinishSummary();
+    });
+  });
+
+  document.querySelector(".finish-summary-overlay")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) {
+      closeFinishSummary();
+    }
+  });
 }
 
 function render() {
@@ -982,7 +1037,8 @@ function render() {
     state.editorOpen ||
       state.purchaseEditOpen ||
       Boolean(state.purchaseStoreModalStore) ||
-      Boolean(state.purchaseActionItemId)
+      Boolean(state.purchaseActionItemId) ||
+      state.finishSummaryOpen
   );
   bindEvents();
   syncSegmentedUi();
@@ -1080,6 +1136,10 @@ function setupGlobalErrorHandlers() {
     }
     if (state.purchaseActionItemId) {
       closePurchaseActionModal();
+      return;
+    }
+    if (state.finishSummaryOpen) {
+      closeFinishSummary();
       return;
     }
     if (state.purchaseEditOpen && !state.purchaseSaving) {

@@ -279,6 +279,24 @@ function renderMenuSection({ state, weekData, weekDates, weekRangeLabel, isCurre
   `;
 }
 
+function renderFinishSummaryModal(state) {
+  if (!state.finishSummaryOpen) {
+    return "";
+  }
+
+  return `
+    <section class="finish-summary-overlay" role="dialog" aria-modal="true" aria-label="Resumen de finalizacion">
+      <div class="finish-summary-modal">
+        <h3>${escapeHtml(state.finishSummaryTitle || "Compra finalizada")}</h3>
+        <p>${escapeHtml(state.finishSummaryMessage || "")}</p>
+        <div class="finish-summary-actions">
+          <button type="button" class="primary" data-close-finish-summary>Aceptar</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 export function renderApp({
   state,
   weekData,
@@ -323,5 +341,6 @@ export function renderApp({
       </section>
     </main>
     ${state.toastMessage ? `<div class="toast toast-show">${escapeHtml(state.toastMessage)}</div>` : ""}
+    ${renderFinishSummaryModal(state)}
   `;
 }

@@ -1264,6 +1264,54 @@ body.modal-open {
   justify-content: center;
 }
 
+.finish-summary-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 176;
+  background: rgba(10, 22, 16, 0.52);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.finish-summary-modal {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(10, 25, 16, 0.28);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.finish-summary-modal h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.finish-summary-modal p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.finish-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.finish-summary-actions .primary {
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  padding: 0.2rem 0.9rem;
+  cursor: pointer;
+}
+
 .toast {
   position: fixed;
   left: 50%;
@@ -1382,6 +1430,14 @@ body.modal-open {
   .purchase-action-modal {
     width: min(560px, 100%);
     border-radius: 18px;
+  }
+
+  .finish-summary-overlay {
+    align-items: center;
+  }
+
+  .finish-summary-modal {
+    width: min(520px, 100%);
   }
 
   .history-card-head {

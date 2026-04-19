@@ -2,6 +2,7 @@ import {
   buildPurchaseSignature,
   buildHistoryRecord,
   createEmptyPurchase,
+  getStats,
   normalizePurchase,
   nowIso
 } from "./purchase-utils.js";
@@ -110,6 +111,35 @@ export async function loadHistory(firestoreClient, limitCount = 60) {
   return docs.map(normalizeHistoryEntry);
 }
 
+function splitPurchaseByChecked(purchase) {
+  const normalized = normalizePurchase(purchase);
+  const checked = createEmptyPurchase(normalized.storesOrder);
+  const pending = createEmptyPurchase(normalized.storesOrder);
+
+  normalized.storesOrder.forEach((store) => {
+    const items = normalized.itemsByStore[store] || [];
+    checked.itemsByStore[store] = items
+      .filter((item) => item.checked)
+      .map((item) => ({ ...item, checked: true }));
+    pending.itemsByStore[store] = items
+      .filter((item) => !item.checked)
+      .map((item) => ({ ...item, checked: false }));
+  });
+
+  checked.updatedAt = nowIso();
+  checked.restoredFromHistoryId = "";
+  checked.restoredFromHistorySignature = "";
+
+  pending.updatedAt = nowIso();
+  pending.restoredFromHistoryId = "";
+  pending.restoredFromHistorySignature = "";
+
+  return {
+    checked: normalizePurchase(checked),
+    pending: normalizePurchase(pending)
+  };
+}
+
 export async function finalizePurchase(firestoreClient, purchase) {
   const normalized = normalizePurchase(purchase);
   const currentSignature = buildPurchaseSignature(normalized);
@@ -118,7 +148,19 @@ export async function finalizePurchase(firestoreClient, purchase) {
     Boolean(normalized.restoredFromHistorySignature) &&
     normalized.restoredFromHistorySignature === currentSignature;
 
-  const historyRecord = buildHistoryRecord(normalized);
+  const { checked, pending } = splitPurchaseByChecked(normalized);
+  const checkedStats = getStats(checked);
+  if (checkedStats.itemsTotal === 0) {
+    const nextActivePurchase = await saveActivePurchase(firestoreClient, pending);
+    return {
+      historyEntry: null,
+      nextActivePurchase,
+      skippedDuplicate: false,
+      skippedNoChecked: true
+    };
+  }
+
+  const historyRecord = buildHistoryRecord(checked);
   let historyEntry = null;
 
   if (!isRestoredWithoutChanges) {
@@ -129,11 +171,12 @@ export async function finalizePurchase(firestoreClient, purchase) {
     historyEntry = normalizeHistoryEntry({ ...historyRecord, id: historyId });
   }
 
-  const empty = await clearActivePurchase(firestoreClient);
+  const nextActivePurchase = await saveActivePurchase(firestoreClient, pending);
   return {
     historyEntry,
-    nextActivePurchase: empty,
-    skippedDuplicate: isRestoredWithoutChanges
+    nextActivePurchase,
+    skippedDuplicate: isRestoredWithoutChanges,
+    skippedNoChecked: false
   };
 }
 
